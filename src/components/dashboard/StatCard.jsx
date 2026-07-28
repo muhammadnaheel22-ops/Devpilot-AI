@@ -1,1 +1,16 @@
-export function StatCard({ icon: Icon, label, value, trend }) { return <div className="panel p-5"><div className="flex items-start justify-between"><div><div className="text-muted text-sm">{label}</div><div className="mt-2 text-3xl font-bold">{value}</div></div><div className="grid h-11 w-11 place-items-center rounded-xl bg-violet-500/12 text-violet-500"><Icon size={21}/></div></div>{trend && <div className="mt-4 text-xs text-emerald-500">{trend}</div>}</div>; }
+export function StatCard({ icon: Icon, label, value, trend }) {
+  return (
+    <div className="panel p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-muted text-sm">{label}</div>
+          <div className="mt-2 text-3xl font-bold">{value}</div>
+        </div>
+        <div className="grid h-11 w-11 place-items-center rounded-xl bg-violet-500/12 text-violet-500">
+          <Icon size={21} />
+        </div>
+      </div>
+      {trend && <div className="mt-4 text-xs text-emerald-500">{trend}</div>}
+    </div>
+  );
+}

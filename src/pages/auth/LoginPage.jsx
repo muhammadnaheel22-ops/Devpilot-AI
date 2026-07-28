@@ -7,4 +7,90 @@ import { AuthShell } from './AuthShell';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
-export default function LoginPage() { const { login, socialLogin, isFirebaseConfigured } = useAuth(); const navigate = useNavigate(); const location = useLocation(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ defaultValues: { email: '', password: '' } }); const go = () => navigate(location.state?.from || '/app', { replace: true }); const submit = async (data) => { try { await login(data.email, data.password); toast.success('Welcome back'); go(); } catch (e) { toast.error(e.message); } }; const social = async (name) => { try { await socialLogin(name); go(); } catch(e) { toast.error(e.message); } }; return <AuthShell title="Welcome back" subtitle="Sign in to continue building with DevPilot AI." footer={<>New to DevPilot? <Link className="font-semibold text-violet-500" to="/register">Create an account</Link></>}><form onSubmit={handleSubmit(submit)} className="space-y-4"><Input label="Email address" type="email" autoComplete="email" error={errors.email?.message} {...register('email',{ required:'Email is required' })}/><Input label="Password" type="password" autoComplete="current-password" error={errors.password?.message} {...register('password',{ required:'Password is required' })}/><div className="text-right"><Link to="/forgot-password" className="text-sm font-semibold text-violet-500">Forgot password?</Link></div><Button className="w-full" disabled={isSubmitting}>{isSubmitting ? 'Signing in…' : 'Sign in'}</Button></form><div className="my-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-[var(--border)]"/>OR<span className="h-px flex-1 bg-[var(--border)]"/></div><div className="grid grid-cols-2 gap-3"><Button variant="secondary" onClick={() => social('google')}><FcGoogle/>Google</Button><Button variant="secondary" onClick={() => social('github')}><Github size={18}/>GitHub</Button></div>{!isFirebaseConfigured && <p className="mt-5 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-300">Demo authentication is active. Add Firebase values to .env for real sign-in.</p>}</AuthShell>; }
+export default function LoginPage() {
+  const { login, socialLogin, isFirebaseConfigured } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({ defaultValues: { email: '', password: '' } });
+  const go = () => navigate(location.state?.from || '/app', { replace: true });
+  const submit = async (data) => {
+    try {
+      await login(data.email, data.password);
+      toast.success('Welcome back');
+      go();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+  const social = async (name) => {
+    try {
+      await socialLogin(name);
+      go();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+  return (
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to continue building with DevPilot AI."
+      footer={
+        <>
+          New to DevPilot?{' '}
+          <Link className="font-semibold text-violet-500" to="/register">
+            Create an account
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <Input
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          error={errors.email?.message}
+          {...register('email', { required: 'Email is required' })}
+        />
+        <Input
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          error={errors.password?.message}
+          {...register('password', { required: 'Password is required' })}
+        />
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-sm font-semibold text-violet-500">
+            Forgot password?
+          </Link>
+        </div>
+        <Button className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Signing in…' : 'Sign in'}
+        </Button>
+      </form>
+      <div className="my-5 flex items-center gap-3 text-xs text-muted">
+        <span className="h-px flex-1 bg-[var(--border)]" />
+        OR
+        <span className="h-px flex-1 bg-[var(--border)]" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Button variant="secondary" onClick={() => social('google')}>
+          <FcGoogle />
+          Google
+        </Button>
+        <Button variant="secondary" onClick={() => social('github')}>
+          <Github size={18} />
+          GitHub
+        </Button>
+      </div>
+      {!isFirebaseConfigured && (
+        <p className="mt-5 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-300">
+          Demo authentication is active. Add Firebase values to .env for real sign-in.
+        </p>
+      )}
+    </AuthShell>
+  );
+}

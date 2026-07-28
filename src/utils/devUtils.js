@@ -100,8 +100,12 @@ export const parseEnv = (value) =>
       const separator = line.indexOf('=');
       if (separator < 1) return result;
       const key = line.slice(0, separator).trim();
-      const raw = line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, '');
+      const raw = line
+        .slice(separator + 1)
+        .trim()
+        .replace(/^['"]|['"]$/g, '');
       const sensitive = /(key|secret|token|password|private)/i.test(key);
-      result[key] = sensitive && raw ? `${raw.slice(0, 3)}${'*'.repeat(Math.min(12, raw.length))}` : raw;
+      result[key] =
+        sensitive && raw ? `${raw.slice(0, 3)}${'*'.repeat(Math.min(12, raw.length))}` : raw;
       return result;
     }, {});

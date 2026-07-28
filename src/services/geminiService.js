@@ -1,10 +1,22 @@
 import { appEnv } from '../config/env';
 
-export async function streamGemini({ messages, mode, language, options = {}, token, onChunk, signal }) {
+export async function streamGemini({
+  messages,
+  mode,
+  language,
+  options = {},
+  token,
+  onChunk,
+  signal,
+}) {
   const response = await fetch(`${appEnv.apiBaseUrl}/gemini/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ messages, mode, language, options }), signal,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ messages, mode, language, options }),
+    signal,
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
@@ -18,7 +30,8 @@ export async function streamGemini({ messages, mode, language, options = {}, tok
     const { value, done } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    const events = buffer.split('\n\n'); buffer = events.pop() || '';
+    const events = buffer.split('\n\n');
+    buffer = events.pop() || '';
     for (const event of events) {
       const line = event.split('\n').find((item) => item.startsWith('data:'));
       if (!line) continue;

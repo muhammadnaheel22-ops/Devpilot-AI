@@ -35,7 +35,9 @@ export default function SnippetsPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-3xl font-bold">Saved Snippets</h1>
-          <p className="text-muted mt-2">Search, copy, delete, sync, and export generated code and documentation.</p>
+          <p className="text-muted mt-2">
+            Search, copy, delete, sync, and export generated code and documentation.
+          </p>
         </div>
         <button
           onClick={() => exportJson(items, 'devpilot-snippets.json')}

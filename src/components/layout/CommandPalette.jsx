@@ -4,5 +4,88 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { aiTools } from '../../constants/tools';
 import { setCommandOpen } from '../../store/uiSlice';
-const extra = [{ title: 'Dashboard', path: '/app' }, { title: 'Developer Utilities', path: '/app/utilities' }, { title: 'REST API Tester', path: '/app/api-tester' }, { title: 'Prompt Library', path: '/app/prompts' }, { title: 'Saved Snippets', path: '/app/snippets' }, { title: 'Settings', path: '/app/settings' }];
-export function CommandPalette() { const open = useSelector((s) => s.ui.commandOpen); const dispatch = useDispatch(); const navigate = useNavigate(); const [query, setQuery] = useState(''); const items = useMemo(() => [...aiTools.map(t => ({ title: t.title, path: `/app/${t.slug}`, description: t.description })), ...extra].filter(item => item.title.toLowerCase().includes(query.toLowerCase())), [query]); useEffect(() => { const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); dispatch(setCommandOpen(!open)); } if (e.key === 'Escape') dispatch(setCommandOpen(false)); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [dispatch, open]); if (!open) return null; return <div className="fixed inset-0 z-[100] bg-black/60 p-4 backdrop-blur-sm" onMouseDown={() => dispatch(setCommandOpen(false))}><div className="glass mx-auto mt-[10vh] max-w-2xl overflow-hidden rounded-2xl" onMouseDown={(e) => e.stopPropagation()}><div className="flex items-center gap-3 border-b border-[var(--border)] p-4"><Search className="text-muted"/><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search DevPilot AI" className="w-full bg-transparent text-lg outline-none"/><button onClick={() => dispatch(setCommandOpen(false))}><X/></button></div><div className="max-h-[55vh] overflow-y-auto p-2">{items.length ? items.map(item => <button key={item.path} className="w-full rounded-xl p-3 text-left hover:bg-violet-500/10" onClick={() => { navigate(item.path); dispatch(setCommandOpen(false)); setQuery(''); }}><div className="font-semibold">{item.title}</div>{item.description && <div className="text-muted mt-1 text-sm">{item.description}</div>}</button>) : <div className="p-8 text-center text-muted">No matching tools</div>}</div></div></div>; }
+const extra = [
+  { title: 'Dashboard', path: '/app' },
+  { title: 'Developer Utilities', path: '/app/utilities' },
+  { title: 'REST API Tester', path: '/app/api-tester' },
+  { title: 'Prompt Library', path: '/app/prompts' },
+  { title: 'Saved Snippets', path: '/app/snippets' },
+  { title: 'Settings', path: '/app/settings' },
+];
+export function CommandPalette() {
+  const open = useSelector((s) => s.ui.commandOpen);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const items = useMemo(
+    () =>
+      [
+        ...aiTools.map((t) => ({
+          title: t.title,
+          path: `/app/${t.slug}`,
+          description: t.description,
+        })),
+        ...extra,
+      ].filter((item) => item.title.toLowerCase().includes(query.toLowerCase())),
+    [query],
+  );
+  useEffect(() => {
+    const key = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        dispatch(setCommandOpen(!open));
+      }
+      if (e.key === 'Escape') dispatch(setCommandOpen(false));
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [dispatch, open]);
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/60 p-4 backdrop-blur-sm"
+      onMouseDown={() => dispatch(setCommandOpen(false))}
+    >
+      <div
+        className="glass mx-auto mt-[10vh] max-w-2xl overflow-hidden rounded-2xl"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-[var(--border)] p-4">
+          <Search className="text-muted" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search DevPilot AI"
+            className="w-full bg-transparent text-lg outline-none"
+          />
+          <button onClick={() => dispatch(setCommandOpen(false))}>
+            <X />
+          </button>
+        </div>
+        <div className="max-h-[55vh] overflow-y-auto p-2">
+          {items.length ? (
+            items.map((item) => (
+              <button
+                key={item.path}
+                className="w-full rounded-xl p-3 text-left hover:bg-violet-500/10"
+                onClick={() => {
+                  navigate(item.path);
+                  dispatch(setCommandOpen(false));
+                  setQuery('');
+                }}
+              >
+                <div className="font-semibold">{item.title}</div>
+                {item.description && (
+                  <div className="text-muted mt-1 text-sm">{item.description}</div>
+                )}
+              </button>
+            ))
+          ) : (
+            <div className="p-8 text-center text-muted">No matching tools</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

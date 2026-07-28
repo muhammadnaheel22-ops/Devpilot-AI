@@ -51,7 +51,9 @@ export default function DashboardPage() {
           <h1 className="mt-2 text-3xl font-bold">
             Welcome, {user?.displayName?.split(' ')[0] || 'Developer'}
           </h1>
-          <p className="text-muted mt-2">Choose a tool, continue recent work, or start a new AI session.</p>
+          <p className="text-muted mt-2">
+            Choose a tool, continue recent work, or start a new AI session.
+          </p>
         </div>
         <Link
           to="/app/code-generator"
@@ -62,7 +64,12 @@ export default function DashboardPage() {
       </motion.div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Sparkles} label="AI requests" value={activity.length} trend="Synced when Firebase is configured" />
+        <StatCard
+          icon={Sparkles}
+          label="AI requests"
+          value={activity.length}
+          trend="Synced when Firebase is configured"
+        />
         <StatCard icon={Code2} label="Saved snippets" value={snippets.length} />
         <StatCard icon={Languages} label="Top language" value={activity[0]?.language || 'Auto'} />
         <StatCard icon={Activity} label="Active tools" value="10+" />
@@ -112,7 +119,9 @@ export default function DashboardPage() {
               activity.slice(0, 5).map((item) => (
                 <div key={item.id} className="rounded-xl border border-[var(--border)] p-3">
                   <div className="font-medium">{item.title}</div>
-                  <div className="text-muted mt-1 text-xs">{new Date(item.at).toLocaleString()}</div>
+                  <div className="text-muted mt-1 text-xs">
+                    {new Date(item.at).toLocaleString()}
+                  </div>
                 </div>
               ))
             ) : (
@@ -120,7 +129,9 @@ export default function DashboardPage() {
                 <div>
                   <Braces className="mx-auto text-violet-500" />
                   <p className="mt-3 font-semibold">No activity yet</p>
-                  <p className="text-muted mt-1 text-sm">Use an AI tool and your history will appear here.</p>
+                  <p className="text-muted mt-1 text-sm">
+                    Use an AI tool and your history will appear here.
+                  </p>
                 </div>
               </div>
             )}

@@ -1,2 +1,19 @@
 import { Code2, Sparkles } from 'lucide-react';
-export function Logo({ compact = false }) { return <div className="flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/25"><Code2 size={22}/><Sparkles size={11} className="absolute -right-1 -top-1"/></div>{!compact && <div><div className="font-bold leading-none">DevPilot AI</div><div className="text-muted mt-1 text-[10px] uppercase tracking-[.24em]">Build smarter</div></div>}</div>; }
+export function Logo({ compact = false }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/25">
+        <Code2 size={22} />
+        <Sparkles size={11} className="absolute -right-1 -top-1" />
+      </div>
+      {!compact && (
+        <div>
+          <div className="font-bold leading-none">DevPilot AI</div>
+          <div className="text-muted mt-1 text-[10px] uppercase tracking-[.24em]">
+            Build smarter
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

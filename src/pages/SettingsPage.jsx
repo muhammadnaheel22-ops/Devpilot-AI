@@ -42,7 +42,9 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="text-3xl font-bold">Settings</h1>
-      <p className="text-muted mt-2">Manage appearance, account, privacy, and application preferences.</p>
+      <p className="text-muted mt-2">
+        Manage appearance, account, privacy, and application preferences.
+      </p>
 
       <div className="mt-6 space-y-5">
         <section className="panel p-5">
@@ -53,9 +55,7 @@ export default function SettingsPage() {
                 key={option}
                 onClick={() => setTheme(option)}
                 className={`rounded-xl border p-4 text-left capitalize ${
-                  theme === option
-                    ? 'border-violet-500 bg-violet-500/10'
-                    : 'border-[var(--border)]'
+                  theme === option ? 'border-violet-500 bg-violet-500/10' : 'border-[var(--border)]'
                 }`}
               >
                 {option}
@@ -65,7 +65,9 @@ export default function SettingsPage() {
           <label className="mt-5 flex items-center justify-between rounded-xl border border-[var(--border)] p-4">
             <span>
               <span className="font-semibold">Compact interface</span>
-              <span className="text-muted mt-1 block text-sm">Reduce spacing in dense dashboards.</span>
+              <span className="text-muted mt-1 block text-sm">
+                Reduce spacing in dense dashboards.
+              </span>
             </span>
             <input
               type="checkbox"
@@ -81,7 +83,11 @@ export default function SettingsPage() {
           <div className="mt-4 flex flex-col gap-4 rounded-xl bg-[var(--surface)] p-4 sm:flex-row sm:items-center">
             <div className="relative h-20 w-20 shrink-0">
               {user?.photoURL ? (
-                <img src={user.photoURL} alt="Profile" className="h-20 w-20 rounded-2xl object-cover" />
+                <img
+                  src={user.photoURL}
+                  alt="Profile"
+                  className="h-20 w-20 rounded-2xl object-cover"
+                />
               ) : (
                 <div className="grid h-20 w-20 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-2xl font-bold text-white">
                   {(user?.displayName || user?.email || 'U')[0].toUpperCase()}
@@ -110,7 +116,9 @@ export default function SettingsPage() {
           </div>
           <div className="mt-4 flex items-center gap-2 text-sm text-emerald-500">
             <ShieldCheck size={18} />
-            {isFirebaseConfigured ? 'Firebase authentication and cloud storage configured' : 'Demo authentication active'}
+            {isFirebaseConfigured
+              ? 'Firebase authentication and cloud storage configured'
+              : 'Demo authentication active'}
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button onClick={save}>Save account</Button>
@@ -132,7 +140,10 @@ export default function SettingsPage() {
             <li>• Gemini API keys are read only by server-side code.</li>
             <li>• The client sends a Firebase ID token when real authentication is enabled.</li>
             <li>• Firestore and Storage rules restrict each user to their own data.</li>
-            <li>• AI requests are size-limited, validated, rate-limited, and protected with security headers.</li>
+            <li>
+              • AI requests are size-limited, validated, rate-limited, and protected with security
+              headers.
+            </li>
           </ul>
         </section>
       </div>

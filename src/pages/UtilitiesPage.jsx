@@ -60,7 +60,8 @@ const initialValues = {
   timestamp: String(Math.floor(Date.now() / 1000)),
   color: '#7C3AED',
   lorem: '3',
-  markdown: '# DevPilot AI\n\n- Markdown preview\n- **Syntax support**\n\n```js\nconsole.log("Hello");\n```',
+  markdown:
+    '# DevPilot AI\n\n- Markdown preview\n- **Syntax support**\n\n```js\nconsole.log("Hello");\n```',
   html: '<main style="font-family:sans-serif;padding:2rem"><h1>DevPilot AI</h1><p>Safe HTML preview.</p></main>',
   css: '.card { color: white; background: linear-gradient(90deg, #7c3aed, #2563eb); padding: 16px; }',
   javascript: 'function greet(name) {\n  console.log(`Hello ${name}`);\n}\n\ngreet("Developer");',
@@ -227,12 +228,14 @@ export default function UtilitiesPage() {
           )}
           {active === 'javascript' && (
             <p className="text-muted mt-4 text-xs">
-              This local tool performs conservative whitespace minification. Use a compiler-aware tool such as Terser in a build pipeline for production bundles.
+              This local tool performs conservative whitespace minification. Use a compiler-aware
+              tool such as Terser in a build pipeline for production bundles.
             </p>
           )}
           {active === 'env' && (
             <p className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-300">
-              Values are processed in your browser. Secret-looking variables are masked in the output.
+              Values are processed in your browser. Secret-looking variables are masked in the
+              output.
             </p>
           )}
         </section>

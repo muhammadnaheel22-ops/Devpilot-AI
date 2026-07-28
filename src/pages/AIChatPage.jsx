@@ -10,7 +10,8 @@ import { getConversations, recordActivity, saveConversation } from '../services/
 
 const initialMessage = {
   role: 'assistant',
-  content: 'Hello! I’m DevPilot AI. Ask me to build, explain, debug, optimize, or document software.',
+  content:
+    'Hello! I’m DevPilot AI. Ask me to build, explain, debug, optimize, or document software.',
 };
 
 export default function AIChatPage() {
@@ -23,7 +24,9 @@ export default function AIChatPage() {
   const { getToken, user } = useAuth();
 
   useEffect(() => {
-    getConversations(user?.uid).then(setHistory).catch(() => {});
+    getConversations(user?.uid)
+      .then(setHistory)
+      .catch(() => {});
   }, [user?.uid]);
 
   const newConversation = () => setMessages([initialMessage]);
@@ -86,18 +89,25 @@ export default function AIChatPage() {
     if (running) return;
     const requestMessages =
       messages.at(-1)?.role === 'assistant' ? messages.slice(0, -1) : messages;
-    const lastUserMessage = [...requestMessages].reverse().find((message) => message.role === 'user');
+    const lastUserMessage = [...requestMessages]
+      .reverse()
+      .find((message) => message.role === 'user');
     if (!lastUserMessage) return toast.error('Send a message first');
     await runGeneration(requestMessages, lastUserMessage.content);
   };
 
   const continueGeneration = async () => {
     if (running) return;
-    const hasAnswer = messages.some((message) => message.role === 'assistant' && message !== initialMessage);
+    const hasAnswer = messages.some(
+      (message) => message.role === 'assistant' && message !== initialMessage,
+    );
     if (!hasAnswer) return toast.error('Generate a response first');
     const instruction =
       'Continue the previous answer exactly where it stopped. Do not repeat completed sections. Preserve the same format and technical assumptions.';
-    await runGeneration([...messages, { role: 'user', content: instruction }], 'Continue generation');
+    await runGeneration(
+      [...messages, { role: 'user', content: instruction }],
+      'Continue generation',
+    );
   };
 
   return (
@@ -138,7 +148,9 @@ export default function AIChatPage() {
                   }}
                   className="w-full rounded-xl p-3 text-left hover:bg-violet-500/10"
                 >
-                  <div className="truncate text-sm font-medium">{conversation.title || 'Conversation'}</div>
+                  <div className="truncate text-sm font-medium">
+                    {conversation.title || 'Conversation'}
+                  </div>
                   <div className="text-muted mt-1 text-xs">
                     {new Date(conversation.updatedAt).toLocaleDateString()}
                   </div>
@@ -173,8 +185,7 @@ export default function AIChatPage() {
                     {message.role === 'assistant' ? (
                       <MarkdownRenderer
                         content={
-                          message.content ||
-                          (running && index === messages.length - 1 ? '▍' : '')
+                          message.content || (running && index === messages.length - 1 ? '▍' : '')
                         }
                       />
                     ) : (

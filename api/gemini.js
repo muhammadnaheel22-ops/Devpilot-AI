@@ -93,7 +93,7 @@ export default async function handler(req, res) {
     });
 
     const stream = await ai.models.generateContentStream({
-      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
 
       contents,
 
@@ -137,7 +137,7 @@ Use properly formatted code blocks and explain important steps.
       `data: ${JSON.stringify({
         error:
           error?.message ||
-          'Gemini generation failed. Check your API key and quota.',
+          'Gemini generation failed. Check your API key, model and quota.',
       })}\n\n`,
     );
 

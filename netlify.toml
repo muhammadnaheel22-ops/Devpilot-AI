@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+[functions]
+  node_bundler = "esbuild"
+[[redirects]]
+  from = "/api/gemini/stream"
+  to = "/.netlify/functions/gemini"
+  status = 200
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,20 @@
+export const languageGroups = [
+  { label: 'Automatic', options: [{ value: 'auto', label: 'Auto detect' }] },
+  { label: 'Web', options: [
+    { value: 'javascript', label: 'JavaScript' }, { value: 'typescript', label: 'TypeScript' },
+    { value: 'html', label: 'HTML' }, { value: 'css', label: 'CSS' }, { value: 'tailwindcss', label: 'Tailwind CSS' },
+    { value: 'react', label: 'React' }, { value: 'nextjs', label: 'Next.js' }, { value: 'nodejs', label: 'Node.js' }, { value: 'express', label: 'Express.js' },
+  ]},
+  { label: 'General purpose', options: [
+    { value: 'python', label: 'Python' }, { value: 'cpp', label: 'C++' }, { value: 'c', label: 'C' }, { value: 'java', label: 'Java' },
+    { value: 'csharp', label: 'C#' }, { value: 'go', label: 'Go' }, { value: 'rust', label: 'Rust' }, { value: 'swift', label: 'Swift' },
+    { value: 'kotlin', label: 'Kotlin' }, { value: 'php', label: 'PHP' }, { value: 'dart', label: 'Dart' }, { value: 'flutter', label: 'Flutter' },
+  ]},
+  { label: 'Data & infrastructure', options: [
+    { value: 'sql', label: 'SQL' }, { value: 'postgresql', label: 'PostgreSQL' }, { value: 'mysql', label: 'MySQL' },
+    { value: 'mongodb', label: 'MongoDB' }, { value: 'firebase', label: 'Firebase' }, { value: 'bash', label: 'Bash' },
+    { value: 'powershell', label: 'PowerShell' }, { value: 'docker', label: 'Docker' }, { value: 'yaml', label: 'YAML' },
+    { value: 'json', label: 'JSON' }, { value: 'xml', label: 'XML' },
+  ]},
+];
+export const flatLanguages = languageGroups.flatMap((group) => group.options);

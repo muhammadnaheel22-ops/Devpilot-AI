@@ -18,38 +18,34 @@ const requestSchema = z.object({
 
 function createGeminiContents(messages) {
   // Remove the welcome message that appears before the first user message.
-  const firstUserIndex = messages.findIndex(
-    (message) => message.role === 'user',
-  );
+  const firstUserIndex = messages.findIndex((message) => message.role === 'user');
 
   if (firstUserIndex === -1) {
     return [];
   }
 
-  return messages
-    .slice(firstUserIndex)
-    .reduce((contents, message) => {
-      const role = message.role === 'assistant' ? 'model' : 'user';
-      const text = message.content.trim();
+  return messages.slice(firstUserIndex).reduce((contents, message) => {
+    const role = message.role === 'assistant' ? 'model' : 'user';
+    const text = message.content.trim();
 
-      if (!text) {
-        return contents;
-      }
-
-      const previousMessage = contents.at(-1);
-
-      // Gemini expects user and model roles to alternate.
-      if (previousMessage?.role === role) {
-        previousMessage.parts[0].text += `\n\n${text}`;
-      } else {
-        contents.push({
-          role,
-          parts: [{ text }],
-        });
-      }
-
+    if (!text) {
       return contents;
-    }, []);
+    }
+
+    const previousMessage = contents.at(-1);
+
+    // Gemini expects user and model roles to alternate.
+    if (previousMessage?.role === role) {
+      previousMessage.parts[0].text += `\n\n${text}`;
+    } else {
+      contents.push({
+        role,
+        parts: [{ text }],
+      });
+    }
+
+    return contents;
+  }, []);
 }
 
 export default async function handler(req, res) {
@@ -135,9 +131,7 @@ Use properly formatted code blocks and explain important steps.
 
     res.write(
       `data: ${JSON.stringify({
-        error:
-          error?.message ||
-          'Gemini generation failed. Check your API key, model and quota.',
+        error: error?.message || 'Gemini generation failed. Check your API key, model and quota.',
       })}\n\n`,
     );
 

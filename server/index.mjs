@@ -7,7 +7,9 @@ import rateLimit from 'express-rate-limit';
 import {
   aiRequestSchema,
   authenticateRequest,
+  getDefaultOpenRouterModel,
   getAdminOverview,
+  listOpenRouterModels,
   recordAiRequest,
   streamOpenRouter,
 } from './backend.mjs';
@@ -43,10 +45,18 @@ app.get('/api/health', (_req, res) =>
     ok: true,
     service: 'devpilot-ai-api',
     provider: 'openrouter',
-    model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
+    model: getDefaultOpenRouterModel(),
     database: isDatabaseConfigured() ? 'neon' : 'not-configured',
   }),
 );
+
+app.get('/api/openrouter/models', async (_req, res, next) => {
+  try {
+    res.json({ models: await listOpenRouterModels(), defaultModel: getDefaultOpenRouterModel() });
+  } catch (error) {
+    next(error);
+  }
+});
 
 async function dataRoute(req, res, next) {
   try {
@@ -114,7 +124,7 @@ app.post('/api/openrouter/stream', async (req, res, next) => {
       email: user?.email || null,
       mode: parsed.data.mode,
       language: parsed.data.language,
-      model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
+      model: parsed.data.model || getDefaultOpenRouterModel(),
       status: 'error',
       durationMs: Date.now() - startedAt,
     }).catch(console.error);

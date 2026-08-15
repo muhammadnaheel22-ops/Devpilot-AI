@@ -4,6 +4,10 @@
 [functions]
   node_bundler = "esbuild"
 [[redirects]]
+  from = "/api/openrouter/models"
+  to = "/.netlify/functions/openrouter"
+  status = 200
+[[redirects]]
   from = "/api/openrouter/stream"
   to = "/.netlify/functions/openrouter"
   status = 200

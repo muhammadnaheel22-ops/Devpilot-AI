@@ -1,11 +1,23 @@
 import {
   aiRequestSchema,
   authenticateRequest,
+  getDefaultOpenRouterModel,
+  listOpenRouterModels,
   recordAiRequest,
   streamOpenRouter,
 } from '../../server/backend.mjs';
 
 export default async (request) => {
+  if (request.method === 'GET') {
+    try {
+      return Response.json({
+        models: await listOpenRouterModels(),
+        defaultModel: getDefaultOpenRouterModel(),
+      });
+    } catch (error) {
+      return Response.json({ message: error.message }, { status: error.status || 500 });
+    }
+  }
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ message: 'Method not allowed.' }), { status: 405 });
   }

@@ -1,6 +1,8 @@
 import {
   aiRequestSchema,
   authenticateRequest,
+  getDefaultOpenRouterModel,
+  listOpenRouterModels,
   recordAiRequest,
   streamOpenRouter,
 } from '../server/backend.mjs';
@@ -8,6 +10,16 @@ import {
 export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    try {
+      return res.json({
+        models: await listOpenRouterModels(),
+        defaultModel: getDefaultOpenRouterModel(),
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed.' });
   const parsed = aiRequestSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -48,7 +60,7 @@ export default async function handler(req, res) {
       email: user?.email || null,
       mode: parsed.data.mode,
       language: parsed.data.language,
-      model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
+      model: parsed.data.model || getDefaultOpenRouterModel(),
       status: 'error',
       durationMs: Date.now() - startedAt,
     }).catch(console.error);

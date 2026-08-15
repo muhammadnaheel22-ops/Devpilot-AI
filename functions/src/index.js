@@ -16,7 +16,47 @@ const schema = z.object({
     .max(30),
   mode: z.string().max(40).default('chat'),
   language: z.string().max(40).default('auto'),
+  model: z
+    .string()
+    .min(3)
+    .max(160)
+    .regex(/^[a-zA-Z0-9._:-]+\/[a-zA-Z0-9._:-]+$/)
+    .optional(),
 });
+
+const modelCache = { expiresAt: 0, models: [] };
+
+async function listModels(apiKey) {
+  if (modelCache.expiresAt > Date.now() && modelCache.models.length) return modelCache.models;
+  const response = await fetch('https://openrouter.ai/api/v1/models/user', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) throw new Error(`Unable to load OpenRouter models (${response.status}).`);
+  const payload = await response.json();
+  const models = (payload.data || [])
+    .filter((model) => {
+      const outputModalities = model.architecture?.output_modalities || [];
+      return (
+        model?.id &&
+        (outputModalities.includes('text') || model.architecture?.modality?.endsWith('->text')) &&
+        !outputModalities.includes('image') &&
+        !outputModalities.includes('audio')
+      );
+    })
+    .map((model) => ({
+      id: model.id,
+      name: model.name || model.id,
+      provider: model.id.split('/')[0],
+      contextLength: model.context_length || null,
+      promptPrice: model.pricing?.prompt || null,
+      completionPrice: model.pricing?.completion || null,
+    }))
+    .sort((a, b) => a.provider.localeCompare(b.provider) || a.name.localeCompare(b.name));
+  if (!models.length) throw new Error('OpenRouter returned no text-generation models.');
+  modelCache.models = models;
+  modelCache.expiresAt = Date.now() + 10 * 60_000;
+  return models;
+}
 
 async function verifyToken(req, required = true) {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
@@ -34,6 +74,17 @@ async function verifyToken(req, required = true) {
 export const api = onRequest(
   { secrets: [openRouterKey], cors: true, timeoutSeconds: 300, memory: '512MiB' },
   async (req, res) => {
+    if (req.path.endsWith('/openrouter/models') && req.method === 'GET') {
+      try {
+        return res.json({
+          models: await listModels(openRouterKey.value()),
+          defaultModel: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
+        });
+      } catch (error) {
+        return res.status(500).json({ message: error.message });
+      }
+    }
+
     if (req.path.endsWith('/admin/overview') && req.method === 'GET') {
       try {
         const admin = await verifyToken(req);
@@ -90,10 +141,19 @@ export const api = onRequest(
     }
 
     const startedAt = Date.now();
-    const model = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+    const defaultModel = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+    const model = parsed.data.model || defaultModel;
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     try {
+      if (model !== defaultModel) {
+        const models = await listModels(openRouterKey.value());
+        if (!models.some((item) => item.id === model)) {
+          throw Object.assign(new Error('The selected OpenRouter model is not available.'), {
+            status: 400,
+          });
+        }
+      }
       const { messages, mode, language } = parsed.data;
       const upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',

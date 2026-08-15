@@ -4,6 +4,7 @@ export async function streamOpenRouter({
   messages,
   mode,
   language,
+  model,
   options = {},
   token,
   onChunk,
@@ -15,7 +16,7 @@ export async function streamOpenRouter({
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ messages, mode, language, options }),
+    body: JSON.stringify({ messages, mode, language, model, options }),
     signal,
   });
   if (!response.ok) {
@@ -41,4 +42,16 @@ export async function streamOpenRouter({
     }
     if (done) break;
   }
+}
+
+export async function getOpenRouterModels({ token, signal } = {}) {
+  const response = await fetch(`${appEnv.apiBaseUrl}/openrouter/models`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.message || `Unable to load AI models (${response.status})`);
+  }
+  return payload;
 }

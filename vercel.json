@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/openrouter/models", "destination": "/api/openrouter" },
     { "source": "/api/openrouter/stream", "destination": "/api/openrouter" },
     { "source": "/api/admin/overview", "destination": "/api/admin" },
     { "source": "/api/data/:resource/:id", "destination": "/api/data?resource=:resource&id=:id" },

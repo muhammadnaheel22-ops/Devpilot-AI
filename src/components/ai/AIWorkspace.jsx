@@ -14,7 +14,7 @@ import { Button } from '../ui/Button';
 import { LanguageSelect } from '../ui/LanguageSelect';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { modePrompts } from '../../constants/tools';
-import { streamGemini } from '../../services/geminiService';
+import { streamOpenRouter } from '../../services/openRouterService';
 import { useAuth } from '../../context/AuthContext';
 import { addUserSnippet, recordActivity } from '../../services/userDataService';
 import { exportJson, exportPdf, exportText } from '../../utils/export';
@@ -52,7 +52,7 @@ export function AIWorkspace({ mode, title, description }) {
     controller.current = new AbortController();
     try {
       const token = await getToken();
-      await streamGemini({
+      await streamOpenRouter({
         messages: [{ role: 'user', content: promptText }],
         mode,
         language,

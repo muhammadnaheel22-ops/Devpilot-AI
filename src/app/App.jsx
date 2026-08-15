@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoadingScreen } from '../components/common/LoadingScreen';
 import { ProtectedRoute } from '../routes/ProtectedRoute';
 import { AppLayout } from '../components/layout/AppLayout';
+import { AdminRoute } from '../routes/AdminRoute';
 const LandingPage = lazy(() => import('../pages/LandingPage'));
 const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
@@ -16,6 +17,7 @@ const PromptLibraryPage = lazy(() => import('../pages/PromptLibraryPage'));
 const SnippetsPage = lazy(() => import('../pages/SnippetsPage'));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
+const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 export default function App() {
@@ -51,6 +53,14 @@ export default function App() {
           <Route path="snippets" element={<SnippetsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route
+            path="admin"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
         </Route>
         <Route path="/dashboard" element={<Navigate to="/app" replace />} />
         <Route path="*" element={<NotFoundPage />} />

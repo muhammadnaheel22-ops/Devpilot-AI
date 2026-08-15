@@ -1,78 +1,62 @@
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
-} from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage, isFirebaseConfigured } from '../firebase/firebase';
+import { auth, storage, isFirebaseConfigured } from '../firebase/firebase';
+import { appEnv } from '../config/env';
 import { localStore } from './storageService';
 
-const isCloudUser = (uid) => isFirebaseConfigured && db && uid && uid !== 'demo-user';
-const normalizeDate = (value) =>
-  value?.toDate?.().toISOString?.() || value || new Date().toISOString();
+const isCloudUser = (uid) => isFirebaseConfigured && auth?.currentUser && uid !== 'demo-user';
+
+async function dataRequest(path, options = {}) {
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch(`${appEnv.apiBaseUrl}/data/${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || 'Database request failed.');
+  return payload;
+}
+
+export async function syncUserProfile(user) {
+  if (!isCloudUser(user?.uid)) return;
+  await dataRequest('profile', { method: 'POST' });
+}
 
 export async function getUserSnippets(uid) {
   if (!isCloudUser(uid)) return localStore.getSnippets();
-  const snapshot = await getDocs(
-    query(collection(db, 'users', uid, 'snippets'), orderBy('createdAt', 'desc'), limit(100)),
-  );
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-    createdAt: normalizeDate(item.data().createdAt),
-  }));
+  return dataRequest('snippets');
 }
 
 export async function addUserSnippet(uid, item) {
   const localItems = localStore.addSnippet(item);
   if (!isCloudUser(uid)) return localItems[0];
-  const result = await addDoc(collection(db, 'users', uid, 'snippets'), {
-    ...item,
-    createdAt: serverTimestamp(),
-  });
-  return { id: result.id, ...item, createdAt: new Date().toISOString() };
+  return dataRequest('snippets', { method: 'POST', body: JSON.stringify(item) });
 }
 
 export async function deleteUserSnippet(uid, id) {
-  const localItems = localStore.getSnippets().filter((item) => item.id !== id);
-  localStore.saveSnippets(localItems);
-  if (isCloudUser(uid)) await deleteDoc(doc(db, 'users', uid, 'snippets', id));
+  localStore.saveSnippets(localStore.getSnippets().filter((item) => item.id !== id));
+  if (isCloudUser(uid))
+    await dataRequest(`snippets/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 export async function getUserActivity(uid) {
   if (!isCloudUser(uid)) return localStore.getActivity();
-  const snapshot = await getDocs(
-    query(collection(db, 'users', uid, 'activity'), orderBy('at', 'desc'), limit(50)),
-  );
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-    at: normalizeDate(item.data().at),
-  }));
+  return dataRequest('activity');
 }
 
 export async function recordActivity(uid, activity) {
   localStore.addActivity(activity);
-  if (isCloudUser(uid))
-    await addDoc(collection(db, 'users', uid, 'activity'), { ...activity, at: serverTimestamp() });
+  if (isCloudUser(uid)) {
+    await dataRequest('activity', { method: 'POST', body: JSON.stringify(activity) });
+  }
 }
 
 export async function getConversations(uid) {
   if (!isCloudUser(uid)) return JSON.parse(localStorage.getItem('devpilot-conversations') || '[]');
-  const snapshot = await getDocs(
-    query(collection(db, 'users', uid, 'conversations'), orderBy('updatedAt', 'desc'), limit(20)),
-  );
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-    updatedAt: normalizeDate(item.data().updatedAt),
-  }));
+  return dataRequest('conversations');
 }
 
 export async function saveConversation(uid, conversation) {
@@ -80,11 +64,7 @@ export async function saveConversation(uid, conversation) {
   const item = { id: crypto.randomUUID(), updatedAt: new Date().toISOString(), ...conversation };
   localStorage.setItem('devpilot-conversations', JSON.stringify([item, ...local].slice(0, 20)));
   if (!isCloudUser(uid)) return item;
-  const result = await addDoc(collection(db, 'users', uid, 'conversations'), {
-    ...conversation,
-    updatedAt: serverTimestamp(),
-  });
-  return { ...item, id: result.id };
+  return dataRequest('conversations', { method: 'POST', body: JSON.stringify(conversation) });
 }
 
 export async function uploadUserAsset(uid, file) {

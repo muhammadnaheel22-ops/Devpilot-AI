@@ -118,7 +118,7 @@ export default function LandingPage() {
             [
               LockKeyhole,
               'Security first',
-              'Gemini secrets stay on the server, with validation, rate limiting, optional Firebase token verification, and restrictive database rules.',
+              'OpenRouter secrets stay on the server, with validation, rate limiting, Firebase token verification, and restrictive database rules.',
             ],
             [
               Workflow,

@@ -6,6 +6,7 @@ import {
   CodeXml,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
   TestTube2,
   Wrench,
   X,
@@ -13,8 +14,10 @@ import {
 import { Logo } from './Logo';
 import { aiTools } from '../../constants/tools';
 import { setSidebarOpen } from '../../store/uiSlice';
+import { useAuth } from '../../context/AuthContext';
 const base = 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition';
 export function Sidebar() {
+  const { isAdmin } = useAuth();
   const open = useSelector((s) => s.ui.sidebarOpen);
   const dispatch = useDispatch();
   const nav = [
@@ -27,6 +30,7 @@ export function Sidebar() {
     { to: '/app/prompts', label: 'Prompt Library', icon: BookOpen },
     { to: '/app/snippets', label: 'Saved Snippets', icon: CodeXml },
     { to: '/app/analytics', label: 'Analytics', icon: BarChart3 },
+    ...(isAdmin ? [{ to: '/app/admin', label: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];
   return (
     <>

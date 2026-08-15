@@ -137,9 +137,9 @@ export default function SettingsPage() {
         <section className="panel p-5">
           <h2 className="text-lg font-bold">Privacy & security</h2>
           <ul className="text-muted mt-4 space-y-3 text-sm leading-6">
-            <li>• Gemini API keys are read only by server-side code.</li>
+            <li>• OpenRouter API keys are read only by server-side code.</li>
             <li>• The client sends a Firebase ID token when real authentication is enabled.</li>
-            <li>• Firestore and Storage rules restrict each user to their own data.</li>
+            <li>• Neon data is accessed only through authenticated Vercel API routes.</li>
             <li>
               • AI requests are size-limited, validated, rate-limited, and protected with security
               headers.

@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../firebase/firebase';
 import { appEnv } from '../config/env';
+import { syncUserProfile } from '../services/userDataService';
 
 const AuthContext = createContext(null);
 const demoUser = {
@@ -21,21 +22,31 @@ const demoUser = {
   email: 'demo@devpilot.ai',
   emailVerified: true,
   isDemo: true,
+  isAdmin: true,
 };
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
       const saved = localStorage.getItem('devpilot-demo-user');
       setUser(saved ? demoUser : null);
+      setIsAdmin(Boolean(saved));
       setLoading(false);
       return undefined;
     }
-    return onAuthStateChanged(auth, (currentUser) => {
+    return onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const token = await currentUser.getIdTokenResult().catch(() => null);
+        setIsAdmin(token?.claims?.admin === true);
+        syncUserProfile(currentUser).catch(console.error);
+      } else {
+        setIsAdmin(false);
+      }
       setLoading(false);
     });
   }, []);
@@ -49,6 +60,7 @@ export function AuthProvider({ children }) {
     if (!isFirebaseConfigured && appEnv.demoAuth) {
       localStorage.setItem('devpilot-demo-user', '1');
       setUser({ ...demoUser, email });
+      setIsAdmin(true);
       return demoUser;
     }
     requireFirebase();
@@ -59,6 +71,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('devpilot-demo-user', '1');
       const next = { ...demoUser, displayName: name, email };
       setUser(next);
+      setIsAdmin(true);
       return next;
     }
     requireFirebase();
@@ -71,6 +84,7 @@ export function AuthProvider({ children }) {
     if (!isFirebaseConfigured && appEnv.demoAuth) {
       localStorage.setItem('devpilot-demo-user', '1');
       setUser(demoUser);
+      setIsAdmin(true);
       return demoUser;
     }
     requireFirebase();
@@ -86,6 +100,7 @@ export function AuthProvider({ children }) {
     if (isFirebaseConfigured) await signOut(auth);
     localStorage.removeItem('devpilot-demo-user');
     setUser(null);
+    setIsAdmin(false);
   };
   const getToken = async () => (user && !user.isDemo && user.getIdToken ? user.getIdToken() : null);
   const updateUserProfile = async ({ displayName, photoURL }) => {
@@ -122,6 +137,7 @@ export function AuthProvider({ children }) {
     getToken,
     updateUserProfile,
     isFirebaseConfigured,
+    isAdmin,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

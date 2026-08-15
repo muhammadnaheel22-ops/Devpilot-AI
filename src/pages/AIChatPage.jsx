@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { LanguageSelect } from '../components/ui/LanguageSelect';
 import { MarkdownRenderer } from '../components/common/MarkdownRenderer';
-import { streamGemini } from '../services/geminiService';
+import { streamOpenRouter } from '../services/openRouterService';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, recordActivity, saveConversation } from '../services/userDataService';
 
@@ -39,7 +39,7 @@ export default function AIChatPage() {
 
     try {
       const token = await getToken();
-      await streamGemini({
+      await streamOpenRouter({
         messages: requestMessages,
         mode: 'chat',
         language,

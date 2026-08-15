@@ -49,6 +49,21 @@ select {
 button {
   cursor: pointer;
 }
+.model-select {
+  color: var(--foreground);
+  color-scheme: light;
+}
+.model-select option {
+  background-color: #ffffff;
+  color: #18181b;
+}
+.dark .model-select {
+  color-scheme: dark;
+}
+.dark .model-select option {
+  background-color: #11131b;
+  color: #f4f4f5;
+}
 ::selection {
   background: rgba(124, 58, 237, 0.35);
 }

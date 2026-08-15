@@ -10,7 +10,7 @@ export function ModelSelect({ value, models, onChange, loading, disabled }) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled || loading}
-        className="focus-ring min-w-0 max-w-60 flex-1 bg-transparent py-2 text-sm font-medium outline-none disabled:cursor-wait disabled:opacity-70"
+        className="model-select focus-ring min-w-0 max-w-60 flex-1 bg-transparent py-2 text-sm font-medium outline-none disabled:cursor-wait disabled:opacity-70"
       >
         {loading && <option value={value}>Loading models…</option>}
         {!loading && !models.some((model) => model.id === value) && (

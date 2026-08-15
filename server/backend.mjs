@@ -1,7 +1,11 @@
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { z } from 'zod';
-import { insertAiRequest, isDatabaseConfigured, listRecentAiRequests } from './database.mjs';
+import {
+  insertAiRequest,
+  isDatabaseConfigured,
+  listAuthUsers,
+  listRecentAiRequests,
+} from './database.mjs';
+export { authenticateRequest } from './auth.mjs';
 
 export const aiRequestSchema = z.object({
   messages: z
@@ -91,57 +95,6 @@ async function resolveOpenRouterModel(requestedModel) {
   return requestedModel;
 }
 
-let firebaseServices;
-
-export function getFirebaseServices() {
-  if (firebaseServices !== undefined) return firebaseServices;
-  if (
-    !process.env.FIREBASE_PROJECT_ID ||
-    !process.env.FIREBASE_CLIENT_EMAIL ||
-    !process.env.FIREBASE_PRIVATE_KEY
-  ) {
-    firebaseServices = null;
-    return firebaseServices;
-  }
-
-  const app =
-    getApps()[0] ||
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      }),
-    });
-  firebaseServices = { auth: getAuth(app) };
-  return firebaseServices;
-}
-
-export async function authenticateRequest(req, { required = false, admin = false } = {}) {
-  const services = getFirebaseServices();
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-
-  if (!token) {
-    if (required || admin)
-      throw Object.assign(new Error('Authentication required.'), { status: 401 });
-    return null;
-  }
-  if (!services) {
-    throw Object.assign(new Error('Server authentication is not configured.'), { status: 503 });
-  }
-
-  try {
-    const user = await services.auth.verifyIdToken(token);
-    if (admin && user.admin !== true) {
-      throw Object.assign(new Error('Administrator access required.'), { status: 403 });
-    }
-    return user;
-  } catch (error) {
-    if (error.status) throw error;
-    throw Object.assign(new Error('Invalid or expired session.'), { status: 401 });
-  }
-}
-
 export function systemInstruction(mode, language) {
   return `You are DevPilot AI, a senior software engineer and secure coding assistant. Mode: ${mode}. Preferred language: ${language}. Produce accurate, maintainable, production-ready answers. State assumptions. Never invent executed test results. Never expose secrets. Prefer parameterized queries, input validation, accessible UI, explicit error handling, and concise setup instructions. Use Markdown with fenced code blocks and file names.`;
 }
@@ -223,26 +176,13 @@ export async function recordAiRequest(entry) {
 }
 
 export async function getAdminOverview() {
-  const services = getFirebaseServices();
-  if (!services || !isDatabaseConfigured()) {
-    throw Object.assign(new Error('Firebase Admin or Neon database is not configured.'), {
+  if (!isDatabaseConfigured()) {
+    throw Object.assign(new Error('Neon database is not configured.'), {
       status: 503,
     });
   }
 
-  const [usersResult, requests] = await Promise.all([
-    services.auth.listUsers(1000),
-    listRecentAiRequests(),
-  ]);
-  const users = usersResult.users.map((user) => ({
-    uid: user.uid,
-    email: user.email || 'No email',
-    name: user.displayName || 'Unnamed user',
-    disabled: user.disabled,
-    admin: user.customClaims?.admin === true,
-    createdAt: user.metadata.creationTime,
-    lastSignInAt: user.metadata.lastSignInTime,
-  }));
+  const [users, requests] = await Promise.all([listAuthUsers(), listRecentAiRequests()]);
   const activeUsers = new Set(
     requests.filter((item) => item.uid !== 'anonymous').map((item) => item.uid),
   );

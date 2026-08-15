@@ -16,6 +16,7 @@ const ApiTesterPage = lazy(() => import('../pages/ApiTesterPage'));
 const PromptLibraryPage = lazy(() => import('../pages/PromptLibraryPage'));
 const SnippetsPage = lazy(() => import('../pages/SnippetsPage'));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage'));
+const HistoryPage = lazy(() => import('../pages/HistoryPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="prompts" element={<PromptLibraryPage />} />
           <Route path="snippets" element={<SnippetsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="history" element={<HistoryPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route
             path="admin"

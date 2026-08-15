@@ -11,6 +11,7 @@ const activitySchema = z.object({
   title: z.string().trim().min(1).max(300),
   mode: z.string().trim().max(40).default('chat'),
   language: z.string().trim().max(40).default('auto'),
+  details: z.string().trim().max(50_000).optional(),
 });
 const conversationSchema = z.object({
   title: z.string().trim().min(1).max(200),

@@ -1,22 +1,22 @@
 # Architecture
 
 ```text
-Browser (React + Firebase Authentication)
-  | Firebase ID token
+Browser (React)
+  | HTTP-only session cookie
   | HTTPS / server-sent events
   v
 Vercel Functions (also available through local Express)
-  | validation, authorization, server-only credentials
+  | session validation and authorization
   +---------------------> OpenRouter chat completions API
   |
   +---------------------> Neon Serverless Postgres over HTTP
 
 Admin dashboard
-  | Firebase ID token with admin=true custom claim
+  | database-backed is_admin role
   v
-Admin API -> Firebase Authentication directory + Neon usage records
+Admin API -> Neon account directory + Neon usage records
 ```
 
-Firebase is used only for authentication and optional profile-image storage. Neon is the application database for profiles, snippets, activity, conversations, and AI request audit records. The browser never receives the Neon connection string, OpenRouter key, or Firebase service-account credentials.
+Neon stores application accounts, password hashes, session hashes, profiles, snippets, activity, conversations, and AI request audit records. The browser never receives the Neon connection string, OpenRouter key, password hashes, or raw session records.
 
-Vercel Functions use `@neondatabase/serverless` over HTTP for one-shot queries. The database schema is versioned in `database/schema.sql` and applied with `npm run db:migrate`.
+Vercel Functions use `@neondatabase/serverless` for one-shot queries. The schema is versioned in `database/schema.sql` and applied with `npm run db:migrate`.

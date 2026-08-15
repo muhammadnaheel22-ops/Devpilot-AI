@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Bot, Plus, RefreshCw, Send, Square, StepForward, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
@@ -17,16 +18,20 @@ const initialMessage = {
 const fallbackModel = 'openai/gpt-4o-mini';
 
 export default function AIChatPage() {
-  const [messages, setMessages] = useState([initialMessage]);
+  const location = useLocation();
+  const restoredConversation = location.state?.conversation;
+  const [messages, setMessages] = useState(
+    () => restoredConversation?.messages || [initialMessage],
+  );
   const [input, setInput] = useState('');
-  const [language, setLanguage] = useState('auto');
+  const [language, setLanguage] = useState(() => restoredConversation?.language || 'auto');
   const [model, setModel] = useState(fallbackModel);
   const [models, setModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState([]);
   const controller = useRef(null);
-  const { getToken, user } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     getConversations(user?.uid)
@@ -66,13 +71,11 @@ export default function AIChatPage() {
     let answer = '';
 
     try {
-      const token = await getToken();
       await streamOpenRouter({
         messages: requestMessages,
         mode: 'chat',
         language,
         model,
-        token,
         signal: controller.current.signal,
         onChunk: (chunk) => {
           answer += chunk;
@@ -92,6 +95,7 @@ export default function AIChatPage() {
           title: `AI Chat: ${titleText.slice(0, 60)}`,
           mode: 'chat',
           language,
+          details: titleText,
         }),
         saveConversation(user?.uid, {
           title: titleText.slice(0, 70),

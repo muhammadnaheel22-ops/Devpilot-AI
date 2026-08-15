@@ -40,7 +40,7 @@ export function AIWorkspace({ mode, title, description }) {
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
   const controller = useRef(null);
-  const { getToken, user } = useAuth();
+  const { user } = useAuth();
   const promptText = useMemo(
     () => `${modePrompts[mode]}\n\nPreferred language: ${language}.\n\nUser request:\n${prompt}`,
     [mode, language, prompt],
@@ -51,12 +51,10 @@ export function AIWorkspace({ mode, title, description }) {
     setOutput('');
     controller.current = new AbortController();
     try {
-      const token = await getToken();
       await streamOpenRouter({
         messages: [{ role: 'user', content: promptText }],
         mode,
         language,
-        token,
         signal: controller.current.signal,
         onChunk: (chunk) => setOutput((v) => v + chunk),
       });
@@ -64,6 +62,7 @@ export function AIWorkspace({ mode, title, description }) {
         title: `${title}: ${prompt.slice(0, 60)}`,
         mode,
         language,
+        details: prompt,
       });
     } catch (e) {
       if (e.name !== 'AbortError') toast.error(e.message);

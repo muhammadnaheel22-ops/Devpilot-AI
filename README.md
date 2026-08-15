@@ -1,91 +1,63 @@
 # DevPilot AI
 
-AI developer workspace built with React 19, Vite, Tailwind CSS, OpenRouter, Vercel Functions, Neon Postgres, and Firebase Authentication.
+AI developer workspace built with React 19, Vite, Tailwind CSS, OpenRouter, Vercel Functions, and Neon Postgres.
 
 ## Features
 
-- Streamed OpenRouter chat and developer tools for generation, debugging, explanation, optimization, documentation, conversion, SQL, regex, and UI work.
-- Server-only OpenRouter and Neon credentials, Zod validation, request limits, CORS, Helmet, Firebase ID-token enforcement, and database-backed request logs.
-- Firebase email/password, Google, and GitHub authentication; Neon-backed profiles, conversations, snippets, and activity.
-- Admin dashboard for Firebase user accounts, roles, recent AI requests, failures, models, and latency. Admin data is protected by Firebase custom claims on the server.
-- Vercel Functions and a local Express server using the same API contracts.
+- Streamed OpenRouter chat and developer tools with selectable models.
+- Custom email/password authentication stored in Neon.
+- Server-created HTTP-only sessions, server-side password hashing, validation, and authorization.
+- Neon-backed accounts, profiles, conversations, snippets, activity, AI logs, and administrator roles.
+- Searchable user history for complete chat conversations and AI tool requests.
+- Admin dashboard for accounts, roles, recent AI requests, failures, models, and latency.
 
 ## Requirements
 
-- Node.js 20.19+ (Node.js 22 for Firebase Functions)
+- Node.js 20.19+
 - An [OpenRouter](https://openrouter.ai/) API key
-- A Neon project for Postgres data
-- A Firebase project for production authentication
+- A [Neon](https://console.neon.tech/) Postgres database
 
 ## Local setup
 
 ```bash
 npm install
 cp .env.example .env
+npm run db:migrate
 npm run dev
 ```
 
 Open `http://localhost:5173`; the Express API runs on `http://localhost:8787`.
 
-At minimum, configure:
+Configure these values in `.env`:
 
 ```env
+VITE_API_BASE_URL=/api
 OPENROUTER_API_KEY=your-server-only-key
 OPENROUTER_MODEL=openai/gpt-4o-mini
 DATABASE_URL=your-pooled-neon-connection-string
+ADMIN_EMAILS=muhammadnaheel904@gmail.com
 ```
 
-Never prefix the OpenRouter key with `VITE_`; Vite variables are shipped to the browser.
+Never prefix database or OpenRouter secrets with `VITE_`; Vite variables are shipped to the browser.
 
-## Neon database setup
+## Authentication
 
-1. Create a project at https://console.neon.tech/.
-2. Click **Connect**, enable the pooled connection, and copy its connection string.
-3. Set `DATABASE_URL` in `.env`.
-4. Apply the checked-in schema:
+Run `npm run db:migrate`, then register through the application. Passwords are hashed with Node.js `scrypt`; random session tokens are stored as SHA-256 hashes in Neon and delivered through HTTP-only, `SameSite=Lax` cookies.
 
-```bash
-npm run db:migrate
-```
-
-The data model is:
-
-```text
-user_profiles
-conversations
-snippets
-activity
-ai_requests
-```
-
-## Firebase Authentication setup
-
-1. Create a Firebase project and Web App.
-2. Enable Email/Password, Google, and/or GitHub in Authentication.
-3. Copy the Web App values into the `VITE_FIREBASE_*` variables in `.env`.
-4. Create a Firebase service account and configure `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` only on the backend.
-5. Enable Firebase Storage only if profile-image uploads are needed.
-
-## Create an administrator
-
-After the account exists in Firebase Authentication, configure the Firebase Admin environment variables and run:
+Email addresses listed in `ADMIN_EMAILS` are promoted during registration or the next login. An existing Neon account can also be promoted directly:
 
 ```bash
 npm run admin:grant -- admin@example.com
 ```
 
-The account must sign out and back in so its refreshed ID token contains `admin=true`. The admin link then appears in the sidebar. The UI check is only navigation; `/api/admin/overview` independently verifies the signed token and custom claim.
+## Deploy to Vercel
 
-## Security settings
-
-For production, use:
-
-```env
-REQUIRE_AUTH=true
-CLIENT_ORIGIN=https://your-domain.example
-```
-
-Also configure Firebase App Check, billing alerts, a shared rate-limit store, and a scheduled retention policy for `ai_requests`.
+1. Import the GitHub repository into Vercel.
+2. Add the variables from `.env.example` under Project Settings → Environment Variables.
+3. Set `CLIENT_ORIGIN` and `OPENROUTER_SITE_URL` to the production URL.
+4. Set `REQUIRE_AUTH=true`.
+5. Run `npm run db:migrate` once against the production `DATABASE_URL`.
+6. Redeploy.
 
 ## Validation
 
@@ -95,16 +67,13 @@ npm run format:check
 npm run build
 ```
 
-## Deploy
-
-Import the repository at https://vercel.com/new and configure the variables from `.env.example`. Run the Neon migration before promoting the first production deployment. The checked-in `vercel.json` maps the OpenRouter, data, and admin APIs plus the SPA fallback.
-
 ## Project layout
 
 ```text
 src/                       # React application and service clients
-server/                    # shared backend, Neon repositories, local Express API
+server/auth.mjs            # password hashing and session authorization
+server/database.mjs        # Neon repositories
 api/                       # Vercel functions
 database/schema.sql        # Neon Postgres schema
-scripts/set-admin.mjs      # admin custom-claim utility
+scripts/set-admin.mjs      # Neon administrator utility
 ```

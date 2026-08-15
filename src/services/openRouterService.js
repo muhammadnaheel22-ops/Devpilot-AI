@@ -6,15 +6,14 @@ export async function streamOpenRouter({
   language,
   model,
   options = {},
-  token,
   onChunk,
   signal,
 }) {
   const response = await fetch(`${appEnv.apiBaseUrl}/openrouter/stream`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ messages, mode, language, model, options }),
     signal,
@@ -44,9 +43,9 @@ export async function streamOpenRouter({
   }
 }
 
-export async function getOpenRouterModels({ token, signal } = {}) {
+export async function getOpenRouterModels({ signal } = {}) {
   const response = await fetch(`${appEnv.apiBaseUrl}/openrouter/models`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
     signal,
   });
   const payload = await response.json().catch(() => ({}));

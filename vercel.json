@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/auth/:action", "destination": "/api/auth?action=:action" },
     { "source": "/api/openrouter/models", "destination": "/api/openrouter" },
     { "source": "/api/openrouter/stream", "destination": "/api/openrouter" },
     { "source": "/api/admin/overview", "destination": "/api/admin" },

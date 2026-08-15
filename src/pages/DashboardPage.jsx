@@ -68,7 +68,7 @@ export default function DashboardPage() {
           icon={Sparkles}
           label="AI requests"
           value={activity.length}
-          trend="Synced when Firebase is configured"
+          trend="Synced securely with Neon"
         />
         <StatCard icon={Code2} label="Saved snippets" value={snippets.length} />
         <StatCard icon={Languages} label="Top language" value={activity[0]?.language || 'Auto'} />

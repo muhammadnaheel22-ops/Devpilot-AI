@@ -1,7 +1,7 @@
 # Security Policy
 
-Do not report secrets in public issues. Rotate any exposed OpenRouter or Firebase service-account credential immediately.
+Do not report or commit secrets in public issues. Rotate any exposed OpenRouter or Neon credential immediately.
 
-Key controls included: server-only OpenRouter key, payload limits, input validation, rate limiting, CORS allow-list, Helmet headers, Firebase token verification, admin custom claims, restrictive Firestore/Storage rules, and no dynamic code execution.
+Included controls: server-only credentials, `scrypt` password hashing with unique salts, random session tokens stored only as SHA-256 hashes, HTTP-only `SameSite=Lax` cookies, server-side role checks, payload validation, request limits, CORS allow-list, Helmet headers, and no dynamic code execution.
 
-Before production: require authentication, use a distributed rate-limit store, enable Firebase App Check, configure CSP at the hosting layer, add audit logs, dependency scanning, security tests, quotas, and billing alerts.
+Before production: use HTTPS, set `REQUIRE_AUTH=true`, configure a distributed rate-limit store and Content Security Policy, add password-reset email delivery, add audit logs, run dependency/security scanning, and configure quotas, retention, backups, and billing alerts.

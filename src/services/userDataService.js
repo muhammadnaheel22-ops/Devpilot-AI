@@ -1,17 +1,14 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage, isFirebaseConfigured } from '../firebase/firebase';
 import { appEnv } from '../config/env';
 import { localStore } from './storageService';
 
-const isCloudUser = (uid) => isFirebaseConfigured && auth?.currentUser && uid !== 'demo-user';
+const isCloudUser = (uid) => Boolean(uid);
 
 async function dataRequest(path, options = {}) {
-  const token = await auth.currentUser.getIdToken();
   const response = await fetch(`${appEnv.apiBaseUrl}/data/${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
@@ -65,13 +62,4 @@ export async function saveConversation(uid, conversation) {
   localStorage.setItem('devpilot-conversations', JSON.stringify([item, ...local].slice(0, 20)));
   if (!isCloudUser(uid)) return item;
   return dataRequest('conversations', { method: 'POST', body: JSON.stringify(conversation) });
-}
-
-export async function uploadUserAsset(uid, file) {
-  if (!isCloudUser(uid) || !storage) throw new Error('Firebase Storage is not configured.');
-  if (file.size > 5 * 1024 * 1024) throw new Error('File must be smaller than 5 MB.');
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-  const objectRef = ref(storage, `users/${uid}/profile/${Date.now()}-${safeName}`);
-  await uploadBytes(objectRef, file, { contentType: file.type || 'application/octet-stream' });
-  return getDownloadURL(objectRef);
 }

@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   const startedAt = Date.now();
   let user = null;
   try {
-    user = await authenticateRequest(req, { required: process.env.REQUIRE_AUTH === 'true' });
+    user = await authenticateRequest(req, { required: process.env.REQUIRE_AUTH !== 'false' });
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');

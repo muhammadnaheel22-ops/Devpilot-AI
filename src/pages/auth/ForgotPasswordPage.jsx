@@ -1,46 +1,20 @@
-import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import { AuthShell } from './AuthShell';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { useAuth } from '../../context/AuthContext';
+
 export default function ForgotPasswordPage() {
-  const { resetPassword } = useAuth();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm();
-  const submit = async ({ email }) => {
-    try {
-      await resetPassword(email);
-      toast.success('Password reset email sent');
-    } catch (e) {
-      toast.error(e.message);
-    }
-  };
   return (
     <AuthShell
-      title="Reset password"
-      subtitle="We will send a secure reset link to your email."
+      title="Password help"
+      subtitle="Self-service email reset is not enabled yet. Contact the application administrator to reset your account password."
       footer={
         <Link className="font-semibold text-violet-500" to="/login">
           Back to sign in
         </Link>
       }
     >
-      <form onSubmit={handleSubmit(submit)} className="space-y-4">
-        <Input
-          label="Email address"
-          type="email"
-          error={errors.email?.message}
-          {...register('email', { required: 'Email is required' })}
-        />
-        <Button className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Sending…' : 'Send reset link'}
-        </Button>
-      </form>
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-muted">
+        Your password is stored only as a secure hash in Neon. It cannot be viewed or recovered.
+      </div>
     </AuthShell>
   );
 }

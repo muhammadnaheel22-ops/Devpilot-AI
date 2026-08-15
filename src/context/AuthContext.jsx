@@ -1,144 +1,81 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import {
-  GithubAuthProvider,
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  updateProfile,
-} from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '../firebase/firebase';
 import { appEnv } from '../config/env';
-import { syncUserProfile } from '../services/userDataService';
 
 const AuthContext = createContext(null);
-const demoUser = {
-  uid: 'demo-user',
-  displayName: 'DevPilot User',
-  email: 'demo@devpilot.ai',
-  emailVerified: true,
-  isDemo: true,
-  isAdmin: true,
-};
+
+async function authRequest(path, options = {}) {
+  const response = await fetch(`${appEnv.apiBaseUrl}/auth/${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || 'Authentication request failed.');
+  return payload;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      const saved = localStorage.getItem('devpilot-demo-user');
-      setUser(saved ? demoUser : null);
-      setIsAdmin(Boolean(saved));
-      setLoading(false);
-      return undefined;
-    }
-    return onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const token = await currentUser.getIdTokenResult().catch(() => null);
-        setIsAdmin(token?.claims?.admin === true);
-        syncUserProfile(currentUser).catch(console.error);
-      } else {
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    });
+    let active = true;
+    authRequest('session')
+      .then(({ user: sessionUser }) => active && setUser(sessionUser))
+      .catch(() => active && setUser(null))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const requireFirebase = () => {
-    if (!isFirebaseConfigured)
-      throw new Error('Firebase is not configured. Add the VITE_FIREBASE_* values to .env.');
-  };
-
   const login = async (email, password) => {
-    if (!isFirebaseConfigured && appEnv.demoAuth) {
-      localStorage.setItem('devpilot-demo-user', '1');
-      setUser({ ...demoUser, email });
-      setIsAdmin(true);
-      return demoUser;
-    }
-    requireFirebase();
-    return (await signInWithEmailAndPassword(auth, email, password)).user;
-  };
-  const register = async (name, email, password) => {
-    if (!isFirebaseConfigured && appEnv.demoAuth) {
-      localStorage.setItem('devpilot-demo-user', '1');
-      const next = { ...demoUser, displayName: name, email };
-      setUser(next);
-      setIsAdmin(true);
-      return next;
-    }
-    requireFirebase();
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(credential.user, { displayName: name });
-    await sendEmailVerification(credential.user);
-    return credential.user;
-  };
-  const socialLogin = async (providerName) => {
-    if (!isFirebaseConfigured && appEnv.demoAuth) {
-      localStorage.setItem('devpilot-demo-user', '1');
-      setUser(demoUser);
-      setIsAdmin(true);
-      return demoUser;
-    }
-    requireFirebase();
-    const provider =
-      providerName === 'github' ? new GithubAuthProvider() : new GoogleAuthProvider();
-    return (await signInWithPopup(auth, provider)).user;
-  };
-  const resetPassword = async (email) => {
-    requireFirebase();
-    return sendPasswordResetEmail(auth, email);
-  };
-  const logout = async () => {
-    if (isFirebaseConfigured) await signOut(auth);
-    localStorage.removeItem('devpilot-demo-user');
-    setUser(null);
-    setIsAdmin(false);
-  };
-  const getToken = async () => (user && !user.isDemo && user.getIdToken ? user.getIdToken() : null);
-  const updateUserProfile = async ({ displayName, photoURL }) => {
-    if (!user) throw new Error('You must be signed in.');
-    if (!isFirebaseConfigured || user.isDemo) {
-      const next = {
-        ...user,
-        ...(displayName ? { displayName } : {}),
-        ...(photoURL ? { photoURL } : {}),
-      };
-      setUser(next);
-      return next;
-    }
-    await updateProfile(user, {
-      ...(displayName ? { displayName } : {}),
-      ...(photoURL ? { photoURL } : {}),
+    const result = await authRequest('login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
     });
-    setUser({
-      ...user,
-      ...(displayName ? { displayName } : {}),
-      ...(photoURL ? { photoURL } : {}),
-    });
-    return user;
+    setUser(result.user);
+    return result.user;
   };
 
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    socialLogin,
-    resetPassword,
-    logout,
-    getToken,
-    updateUserProfile,
-    isFirebaseConfigured,
-    isAdmin,
+  const register = async (name, email, password) => {
+    const result = await authRequest('register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    });
+    setUser(result.user);
+    return result.user;
   };
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+
+  const logout = async () => {
+    await authRequest('logout', { method: 'POST' }).catch(() => {});
+    setUser(null);
+  };
+
+  const updateUserProfile = async ({ displayName, photoURL }) => {
+    const result = await authRequest('profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ displayName, photoURL }),
+    });
+    setUser(result.user);
+    return result.user;
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        updateUserProfile,
+        isAdmin: user?.isAdmin === true,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
+
 export const useAuth = () => useContext(AuthContext);

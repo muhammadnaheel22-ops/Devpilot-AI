@@ -1,14 +1,12 @@
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Github } from 'lucide-react';
-import { FcGoogle } from 'react-icons/fc';
 import { AuthShell } from './AuthShell';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 export default function LoginPage() {
-  const { login, socialLogin, isFirebaseConfigured } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -21,14 +19,6 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       toast.success('Welcome back');
-      go();
-    } catch (e) {
-      toast.error(e.message);
-    }
-  };
-  const social = async (name) => {
-    try {
-      await socialLogin(name);
       go();
     } catch (e) {
       toast.error(e.message);
@@ -71,26 +61,9 @@ export default function LoginPage() {
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
-      <div className="my-5 flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-[var(--border)]" />
-        OR
-        <span className="h-px flex-1 bg-[var(--border)]" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="secondary" onClick={() => social('google')}>
-          <FcGoogle />
-          Google
-        </Button>
-        <Button variant="secondary" onClick={() => social('github')}>
-          <Github size={18} />
-          GitHub
-        </Button>
-      </div>
-      {!isFirebaseConfigured && (
-        <p className="mt-5 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-300">
-          Demo authentication is active. Add Firebase values to .env for real sign-in.
-        </p>
-      )}
+      <p className="text-muted mt-5 text-center text-xs">
+        Your account is protected by a secure server session stored in Neon.
+      </p>
     </AuthShell>
   );
 }

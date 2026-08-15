@@ -34,7 +34,7 @@ export default async (request) => {
 
   let user = null;
   try {
-    user = await authenticateRequest(request, { required: process.env.REQUIRE_AUTH === 'true' });
+    user = await authenticateRequest(request, { required: process.env.REQUIRE_AUTH !== 'false' });
   } catch (error) {
     return new Response(JSON.stringify({ message: error.message }), {
       status: error.status || 500,

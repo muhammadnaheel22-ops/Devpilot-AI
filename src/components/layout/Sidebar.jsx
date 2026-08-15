@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   CodeXml,
+  History,
   LayoutDashboard,
   Settings,
   ShieldCheck,
@@ -29,6 +30,7 @@ export function Sidebar() {
     { to: '/app/api-tester', label: 'REST API Tester', icon: TestTube2 },
     { to: '/app/prompts', label: 'Prompt Library', icon: BookOpen },
     { to: '/app/snippets', label: 'Saved Snippets', icon: CodeXml },
+    { to: '/app/history', label: 'History', icon: History },
     { to: '/app/analytics', label: 'Analytics', icon: BarChart3 },
     ...(isAdmin ? [{ to: '/app/admin', label: 'Admin Dashboard', icon: ShieldCheck }] : []),
   ];

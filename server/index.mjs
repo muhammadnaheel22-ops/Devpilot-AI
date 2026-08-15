@@ -15,6 +15,15 @@ import {
 } from './backend.mjs';
 import { runDataOperation } from './data-api.mjs';
 import { isDatabaseConfigured } from './database.mjs';
+import {
+  clearSessionCookie,
+  getSessionUser,
+  loginAccount,
+  logoutAccount,
+  registerAccount,
+  sessionCookie,
+  updateAccountProfile,
+} from './auth.mjs';
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
@@ -49,6 +58,52 @@ app.get('/api/health', (_req, res) =>
     database: isDatabaseConfigured() ? 'neon' : 'not-configured',
   }),
 );
+
+app.get('/api/auth/session', async (req, res, next) => {
+  try {
+    res.json({ user: await getSessionUser(req) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/auth/register', async (req, res, next) => {
+  try {
+    const result = await registerAccount(req.body);
+    res.setHeader('Set-Cookie', sessionCookie(result.token));
+    res.status(201).json({ user: result.user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/auth/login', async (req, res, next) => {
+  try {
+    const result = await loginAccount(req.body);
+    res.setHeader('Set-Cookie', sessionCookie(result.token));
+    res.json({ user: result.user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/auth/logout', async (req, res, next) => {
+  try {
+    await logoutAccount(req);
+    res.setHeader('Set-Cookie', clearSessionCookie());
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/auth/profile', async (req, res, next) => {
+  try {
+    res.json({ user: await updateAccountProfile(req, req.body) });
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/openrouter/models', async (_req, res, next) => {
   try {
@@ -85,7 +140,7 @@ app.post('/api/openrouter/stream', async (req, res, next) => {
   const startedAt = Date.now();
   let user = null;
   try {
-    user = await authenticateRequest(req, { required: process.env.REQUIRE_AUTH === 'true' });
+    user = await authenticateRequest(req, { required: process.env.REQUIRE_AUTH !== 'false' });
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');

@@ -15,45 +15,17 @@ import { getAdminOverview } from '../services/adminService';
 import { Button } from '../components/ui/Button';
 import { StatCard } from '../components/dashboard/StatCard';
 
-const demoOverview = {
-  generatedAt: new Date().toISOString(),
-  metrics: { totalUsers: 4, recentRequests: 18, activeUsers: 3, failedRequests: 1 },
-  users: [
-    {
-      uid: 'demo-admin',
-      name: 'DevPilot Admin',
-      email: 'demo@devpilot.ai',
-      admin: true,
-      disabled: false,
-      createdAt: new Date().toISOString(),
-      lastSignInAt: new Date().toISOString(),
-    },
-  ],
-  requests: [
-    {
-      id: 'demo-request',
-      email: 'demo@devpilot.ai',
-      mode: 'generate',
-      model: 'openai/gpt-4o-mini',
-      status: 'success',
-      durationMs: 1280,
-      createdAt: new Date().toISOString(),
-    },
-  ],
-};
-
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : 'Not available';
 }
 
 export default function AdminDashboardPage() {
-  const { getToken, user } = useAuth();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['admin-overview', user?.uid],
     queryFn: async () => {
-      if (user?.isDemo) return demoOverview;
-      return getAdminOverview(await getToken());
+      return getAdminOverview();
     },
   });
 
@@ -206,7 +178,7 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col justify-between gap-3 border-b border-[var(--border)] p-5 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-lg font-bold">User directory</h2>
-            <p className="text-muted mt-1 text-sm">Firebase Authentication accounts and roles</p>
+            <p className="text-muted mt-1 text-sm">Neon accounts and database-backed roles</p>
           </div>
           <label className="flex items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2">
             <Search className="text-muted" size={17} />

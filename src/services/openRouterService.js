@@ -1,6 +1,6 @@
 import { appEnv } from '../config/env';
 
-export async function streamGemini({
+export async function streamOpenRouter({
   messages,
   mode,
   language,
@@ -9,7 +9,7 @@ export async function streamGemini({
   onChunk,
   signal,
 }) {
-  const response = await fetch(`${appEnv.apiBaseUrl}/gemini/stream`, {
+  const response = await fetch(`${appEnv.apiBaseUrl}/openrouter/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -23,13 +23,13 @@ export async function streamGemini({
     throw new Error(payload.message || `AI request failed (${response.status})`);
   }
   if (!response.body) throw new Error('Streaming is not supported in this browser.');
+
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   while (true) {
     const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
     const events = buffer.split('\n\n');
     buffer = events.pop() || '';
     for (const event of events) {
@@ -39,5 +39,6 @@ export async function streamGemini({
       if (data.error) throw new Error(data.error);
       if (data.text) onChunk(data.text);
     }
+    if (done) break;
   }
 }

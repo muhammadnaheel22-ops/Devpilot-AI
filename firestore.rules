@@ -6,5 +6,7 @@ service cloud.firestore {
     match /users/{userId} { allow read, create, update: if owner(userId); allow delete: if false; }
     match /users/{userId}/{document=**} { allow read, write: if owner(userId); }
     match /publicPrompts/{promptId} { allow read: if signedIn(); allow write: if false; }
+    // Written and queried only by trusted Firebase Admin backend code.
+    match /aiRequests/{requestId} { allow read, write: if false; }
   }
 }

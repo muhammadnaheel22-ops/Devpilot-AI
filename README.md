@@ -1,21 +1,21 @@
 # DevPilot AI
 
-Production-ready AI developer assistant built with React 19, Vite, Tailwind CSS, Firebase, Monaco Editor, Redux Toolkit, TanStack Query, and the official Google Gen AI SDK.
+AI developer workspace built with React 19, Vite, Tailwind CSS, OpenRouter, Vercel Functions, Neon Postgres, and Firebase Authentication.
 
-## What is included
+## Features
 
-- Premium landing page, responsive dashboard, dark/light/system theme, command palette (`Ctrl/Cmd + K`), lazy routes, skeleton/loading states, error boundary, and accessible interactions.
-- Firebase email/password, Google, and GitHub authentication with session persistence, password reset, verification support, protected routes, and demo-auth mode for local UI testing.
-- Streamed Gemini chat plus reusable AI workspaces for generation, debugging, explanation, optimization, documentation, conversion, SQL, regex, and UI generation.
-- Monaco editor, Markdown rendering, syntax highlighting, copy/save/export actions, prompt library, saved snippets, REST API tester, JSON/Base64/JWT/UUID/password utilities, and analytics dashboards.
-- Server-side Gemini proxy with Zod validation, payload limits, rate limiting, Helmet, CORS allow-list, optional Firebase ID-token verification, and no client-side AI secret.
-- Firestore and Storage rules, GitHub Actions CI, ESLint, Prettier, Husky/lint-staged, Vercel, Netlify, and Firebase Hosting configurations.
+- Streamed OpenRouter chat and developer tools for generation, debugging, explanation, optimization, documentation, conversion, SQL, regex, and UI work.
+- Server-only OpenRouter and Neon credentials, Zod validation, request limits, CORS, Helmet, Firebase ID-token enforcement, and database-backed request logs.
+- Firebase email/password, Google, and GitHub authentication; Neon-backed profiles, conversations, snippets, and activity.
+- Admin dashboard for Firebase user accounts, roles, recent AI requests, failures, models, and latency. Admin data is protected by Firebase custom claims on the server.
+- Vercel Functions and a local Express server using the same API contracts.
 
 ## Requirements
 
-- Node.js 20.19+ or Node.js 22.12+
-- A Firebase project for production authentication/data
-- A Gemini API key from Google AI Studio
+- Node.js 20.19+ (Node.js 22 for Firebase Functions)
+- An [OpenRouter](https://openrouter.ai/) API key
+- A Neon project for Postgres data
+- A Firebase project for production authentication
 
 ## Local setup
 
@@ -25,110 +25,86 @@ cp .env.example .env
 npm run dev
 ```
 
-Open `http://localhost:5173`. The local API runs on `http://localhost:8787`.
+Open `http://localhost:5173`; the Express API runs on `http://localhost:8787`.
 
-Without Firebase values, demo authentication is available when `VITE_ENABLE_DEMO_AUTH=true`. AI generation still requires `GEMINI_API_KEY` in `.env`.
+At minimum, configure:
 
-## Firebase setup
-
-1. Create a Firebase project.
-2. Add a Web App and copy its config to the `VITE_FIREBASE_*` variables.
-3. Enable Email/Password, Google, and GitHub providers in Authentication.
-4. Add your development and deployment domains to Authorized domains.
-5. Create Firestore and Storage.
-6. Deploy the included rules:
-
-```bash
-npm install -g firebase-tools
-firebase login
-cp .firebaserc.example .firebaserc
-# Edit .firebaserc with your project ID
-firebase deploy --only firestore:rules,storage
+```env
+OPENROUTER_API_KEY=your-server-only-key
+OPENROUTER_MODEL=openai/gpt-4o-mini
+DATABASE_URL=your-pooled-neon-connection-string
 ```
 
-For GitHub login, create a GitHub OAuth App and copy the Firebase callback URL shown in the provider setup screen.
+Never prefix the OpenRouter key with `VITE_`; Vite variables are shipped to the browser.
 
-## Gemini security model
+## Neon database setup
 
-`GEMINI_API_KEY` is server-only. Never rename it to `VITE_GEMINI_API_KEY`; variables beginning with `VITE_` are embedded in the browser bundle.
+1. Create a project at https://console.neon.tech/.
+2. Click **Connect**, enable the pooled connection, and copy its connection string.
+3. Set `DATABASE_URL` in `.env`.
+4. Apply the checked-in schema:
 
-For strict local/hosted API authentication, configure Firebase Admin values and set:
+```bash
+npm run db:migrate
+```
+
+The data model is:
+
+```text
+user_profiles
+conversations
+snippets
+activity
+ai_requests
+```
+
+## Firebase Authentication setup
+
+1. Create a Firebase project and Web App.
+2. Enable Email/Password, Google, and/or GitHub in Authentication.
+3. Copy the Web App values into the `VITE_FIREBASE_*` variables in `.env`.
+4. Create a Firebase service account and configure `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` only on the backend.
+5. Enable Firebase Storage only if profile-image uploads are needed.
+
+## Create an administrator
+
+After the account exists in Firebase Authentication, configure the Firebase Admin environment variables and run:
+
+```bash
+npm run admin:grant -- admin@example.com
+```
+
+The account must sign out and back in so its refreshed ID token contains `admin=true`. The admin link then appears in the sidebar. The UI check is only navigation; `/api/admin/overview` independently verifies the signed token and custom claim.
+
+## Security settings
+
+For production, use:
 
 ```env
 REQUIRE_AUTH=true
-FIREBASE_PROJECT_ID=...
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+CLIENT_ORIGIN=https://your-domain.example
 ```
 
-## Build
+Also configure Firebase App Check, billing alerts, a shared rate-limit store, and a scheduled retention policy for `ai_requests`.
+
+## Validation
 
 ```bash
 npm run lint
 npm run format:check
 npm run build
-npm run preview
 ```
 
-## Deploy to Vercel
+## Deploy
 
-1. Import the repository in Vercel.
-2. Add `GEMINI_API_KEY`, `GEMINI_MODEL`, and all `VITE_FIREBASE_*` variables.
-3. Build command: `npm run build`; output directory: `dist`.
-4. `vercel.json` maps `/api/gemini/stream` to the serverless function and preserves SPA routing.
+Import the repository at https://vercel.com/new and configure the variables from `.env.example`. Run the Neon migration before promoting the first production deployment. The checked-in `vercel.json` maps the OpenRouter, data, and admin APIs plus the SPA fallback.
 
-## Deploy to Netlify
-
-1. Import the repository.
-2. Add environment variables.
-3. Netlify reads `netlify.toml`; the Gemini stream is served by `netlify/functions/gemini.mjs`.
-4. Set `VITE_API_BASE_URL=/api`.
-
-## Deploy to Firebase Hosting + Functions
-
-```bash
-npm run build
-cd functions && npm install && cd ..
-firebase functions:secrets:set GEMINI_API_KEY
-firebase deploy
-```
-
-In Firebase production, the included function requires a valid Firebase ID token.
-
-## Firestore data model (recommended)
+## Project layout
 
 ```text
-users/{uid}
-users/{uid}/conversations/{conversationId}
-users/{uid}/snippets/{snippetId}
-users/{uid}/projects/{projectId}
-users/{uid}/usage/{eventId}
-publicPrompts/{promptId}
+src/                       # React application and service clients
+server/                    # shared backend, Neon repositories, local Express API
+api/                       # Vercel functions
+database/schema.sql        # Neon Postgres schema
+scripts/set-admin.mjs      # admin custom-claim utility
 ```
-
-The current UI uses local storage for snippets and activity so the complete interface works before Firestore is configured. Replace `src/services/storageService.js` with Firestore-backed repositories for synchronized multi-device data.
-
-## Production checklist
-
-- Restrict `CLIENT_ORIGIN` to your real domains.
-- Enable `REQUIRE_AUTH=true` on Express/Vercel and add Firebase Admin credentials.
-- Add Firebase App Check, abuse monitoring, quotas, billing alerts, and server-side usage logs.
-- Keep security rules deny-by-default and test them with the Firebase Emulator Suite.
-- Add end-to-end tests (Playwright), component tests, and a persistent rate-limit store for multi-instance deployment.
-- Review AI outputs before execution; generated code is not automatically trusted or run.
-
-## Folder structure
-
-```text
-src/
-  app/ components/ config/ constants/ context/ firebase/
-  pages/ routes/ services/ store/ styles/ utils/
-server/                    # local/standalone Express Gemini API
-api/                       # Vercel serverless adapter
-netlify/functions/         # Netlify adapter
-functions/                 # Firebase Functions adapter
-```
-
-## License
-
-Private project starter. Add your preferred license before public distribution.

@@ -66,7 +66,7 @@ const initialValues = {
   css: '.card { color: white; background: linear-gradient(90deg, #7c3aed, #2563eb); padding: 16px; }',
   javascript: 'function greet(name) {\n  console.log(`Hello ${name}`);\n}\n\ngreet("Developer");',
   diff: 'const mode = "development";\n---AFTER---\nconst mode = "production";',
-  env: 'API_URL=https://example.com\nGEMINI_API_KEY=secret-value\nNODE_ENV=production',
+  env: 'API_URL=https://example.com\nOPENROUTER_API_KEY=secret-value\nNODE_ENV=production',
 };
 
 export default function UtilitiesPage() {

@@ -21,7 +21,7 @@ export function ModelSelect({ value, models, onChange, loading, disabled, label 
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled || loading}
-        className="model-select focus-ring min-w-0 w-full flex-1 bg-transparent py-2 text-sm font-medium outline-none disabled:cursor-wait disabled:opacity-70"
+        className="themed-select focus-ring min-w-0 w-full flex-1 bg-transparent py-2 text-sm font-medium text-[var(--foreground)] outline-none disabled:cursor-wait disabled:opacity-70"
       >
         {loading && <option value={value}>Loading models…</option>}
         {!loading && !value && <option value="">Select a model…</option>}

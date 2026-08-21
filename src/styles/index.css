@@ -49,18 +49,20 @@ select {
 button {
   cursor: pointer;
 }
-.model-select {
+.themed-select {
   color: var(--foreground);
   color-scheme: light;
 }
-.model-select option {
+.themed-select option,
+.themed-select optgroup {
   background-color: #ffffff;
   color: #18181b;
 }
-.dark .model-select {
+.dark .themed-select {
   color-scheme: dark;
 }
-.dark .model-select option {
+.dark .themed-select option,
+.dark .themed-select optgroup {
   background-color: #11131b;
   color: #f4f4f5;
 }

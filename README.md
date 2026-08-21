@@ -35,7 +35,7 @@ VITE_API_BASE_URL=/api
 OPENROUTER_API_KEY=your-server-only-key
 OPENROUTER_MODEL=openai/gpt-4o-mini
 DATABASE_URL=postgresql://user:password@ep-example-pooler.region.aws.neon.tech/neondb?sslmode=require
-ADMIN_EMAILS=muhammadnaheel904@gmail.com
+ADMIN_EMAILS=
 ```
 
 Never prefix database or OpenRouter secrets with `VITE_`; Vite variables are shipped to the browser.

@@ -31,7 +31,8 @@ export function ModelSelect({ value, models, onChange, loading, disabled, label 
             <optgroup key={provider} label={provider}>
               {providerModels.map((model) => (
                 <option key={model.id} value={model.id}>
-                  {model.name} · {model.contextLength?.toLocaleString() || '?'} tokens
+                  {model.name} · FREE · {model.contextLength?.toLocaleString() || '?'} context
+                  tokens
                 </option>
               ))}
             </optgroup>

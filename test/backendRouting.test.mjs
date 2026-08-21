@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { streamOpenRouter } from '../server/backend.mjs';
+import { resolveOpenRouterRouting, streamOpenRouter } from '../server/backend.mjs';
 
 const originalFetch = globalThis.fetch;
 const originalApiKey = process.env.OPENROUTER_API_KEY;
@@ -37,7 +37,7 @@ test('sends OpenRouter Auto and reports the concrete selected model', async () =
   let requestBody;
   globalThis.fetch = async (_url, options) => {
     requestBody = JSON.parse(options.body);
-    return streamingResponse('anthropic/claude-sonnet-4');
+    return streamingResponse('openai/gpt-oss-20b:free');
   };
   const chunks = [];
   const result = await streamOpenRouter({
@@ -47,11 +47,11 @@ test('sends OpenRouter Auto and reports the concrete selected model', async () =
     routing: { mode: 'auto' },
     onText: (text) => chunks.push(text),
   });
-  assert.equal(requestBody.model, 'openrouter/auto');
+  assert.equal(requestBody.model, 'openrouter/free');
   assert.equal(requestBody.models, undefined);
   assert.equal(requestBody.max_completion_tokens, 1024);
   assert.equal(requestBody.max_tokens, undefined);
-  assert.equal(result.model, 'anthropic/claude-sonnet-4');
+  assert.equal(result.model, 'openai/gpt-oss-20b:free');
   assert.equal(result.routingMode, 'auto');
   assert.deepEqual(chunks, ['Completed']);
 });
@@ -59,20 +59,33 @@ test('sends OpenRouter Auto and reports the concrete selected model', async () =
 test('sends an ordered models array for fallback routing', async () => {
   process.env.OPENROUTER_API_KEY = 'test-key';
   process.env.OPENROUTER_MAX_COMPLETION_TOKENS = '1024';
-  const requested = ['openai/gpt-5', 'anthropic/claude-sonnet-4', 'google/gemini-2.5-pro'];
+  const requested = [
+    'openai/gpt-oss-20b:free',
+    'google/gemma-3-27b-it:free',
+    'qwen/qwen3-coder:free',
+  ];
   let requestBody;
   globalThis.fetch = async (url, options) => {
     if (url.endsWith('/models/user')) {
       return Response.json({
-        data: requested.map((id) => ({
-          id,
-          name: id,
-          architecture: { output_modalities: ['text'] },
-        })),
+        data: [
+          ...requested.map((id) => ({
+            id,
+            name: id,
+            pricing: { prompt: '0', completion: '0' },
+            architecture: { output_modalities: ['text'] },
+          })),
+          {
+            id: 'openai/gpt-5',
+            name: 'OpenAI GPT-5',
+            pricing: { prompt: '0.000001', completion: '0.00001' },
+            architecture: { output_modalities: ['text'] },
+          },
+        ],
       });
     }
     requestBody = JSON.parse(options.body);
-    return streamingResponse('anthropic/claude-sonnet-4');
+    return streamingResponse('google/gemma-3-27b-it:free');
   };
   const result = await streamOpenRouter({
     messages: [{ role: 'user', content: 'Build an API.' }],
@@ -87,8 +100,17 @@ test('sends an ordered models array for fallback routing', async () => {
   });
   assert.deepEqual(requestBody.models, requested);
   assert.equal(requestBody.model, undefined);
-  assert.equal(result.model, 'anthropic/claude-sonnet-4');
+  assert.equal(result.model, 'google/gemma-3-27b-it:free');
   assert.equal(result.routingMode, 'fallback');
+});
+
+test('rejects paid models even when a stale client submits one', async () => {
+  await assert.rejects(
+    resolveOpenRouterRouting({
+      routing: { mode: 'manual', primaryModel: 'openai/gpt-5' },
+    }),
+    /not available as a free OpenRouter model/i,
+  );
 });
 
 test('retries once within the affordable credit limit', async () => {
@@ -108,7 +130,7 @@ test('retries once within the affordable credit limit', async () => {
         { status: 402 },
       );
     }
-    return streamingResponse('openai/gpt-5');
+    return streamingResponse('openai/gpt-oss-20b:free');
   };
 
   const result = await streamOpenRouter({
@@ -122,5 +144,5 @@ test('retries once within the affordable credit limit', async () => {
   assert.equal(requests.length, 2);
   assert.equal(requests[0].max_completion_tokens, 1024);
   assert.equal(requests[1].max_completion_tokens, 180);
-  assert.equal(result.model, 'openai/gpt-5');
+  assert.equal(result.model, 'openai/gpt-oss-20b:free');
 });

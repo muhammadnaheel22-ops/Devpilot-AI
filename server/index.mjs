@@ -113,7 +113,7 @@ app.get('/api/openrouter/models', async (_req, res, next) => {
       models: await listOpenRouterModels(),
       defaultModel: getDefaultOpenRouterModel(),
       routingModes: ['auto', 'manual', 'fallback'],
-      autoModel: 'openrouter/auto',
+      autoModel: 'openrouter/free',
       maxFallbacks: 5,
     });
   } catch (error) {

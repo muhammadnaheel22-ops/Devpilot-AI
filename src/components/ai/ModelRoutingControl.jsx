@@ -3,9 +3,9 @@ import { ChevronDown, ChevronUp, Plus, Search, X } from 'lucide-react';
 import { ModelSelect } from '../ui/ModelSelect';
 
 const modes = [
-  { id: 'auto', label: 'Auto', detail: 'OpenRouter chooses' },
-  { id: 'manual', label: 'Manual', detail: 'Use one model' },
-  { id: 'fallback', label: 'Fallback', detail: 'Try models in order' },
+  { id: 'auto', label: 'Auto', detail: 'Free router chooses' },
+  { id: 'manual', label: 'Manual', detail: 'Use one free model' },
+  { id: 'fallback', label: 'Fallback', detail: 'Try free models in order' },
 ];
 
 export function ModelRoutingControl({ routing, setRouting, models, loading, disabled }) {
@@ -49,7 +49,7 @@ export function ModelRoutingControl({ routing, setRouting, models, loading, disa
         <div>
           <div className="text-sm font-semibold">Model routing</div>
           <div className="text-muted text-xs">
-            {loading ? 'Loading OpenRouter catalog…' : `${models.length} available text models`}
+            {loading ? 'Loading free OpenRouter models…' : `${models.length} free text models`}
           </div>
         </div>
         <div className="flex rounded-xl border border-[var(--border)] p-1">
@@ -74,7 +74,7 @@ export function ModelRoutingControl({ routing, setRouting, models, loading, disa
 
       {routing.mode === 'auto' ? (
         <p className="text-muted mt-3 text-sm">
-          OpenRouter Auto analyzes each prompt and selects the best available model automatically.
+          OpenRouter’s free router selects an available zero-cost model for each prompt.
         </p>
       ) : (
         <div className="mt-3 space-y-3">
@@ -86,7 +86,7 @@ export function ModelRoutingControl({ routing, setRouting, models, loading, disa
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               disabled={disabled || loading}
-              placeholder="Search every model by name or provider…"
+              placeholder="Search free models by name or provider…"
               className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none"
             />
           </label>
@@ -186,7 +186,7 @@ export function ModelRoutingControl({ routing, setRouting, models, loading, disa
             </ol>
           ) : (
             <p className="text-sm text-amber-500">
-              Add at least one fallback. Until then, requests use the primary model only.
+              Add at least one free fallback. Until then, requests use the primary model only.
             </p>
           )}
         </div>

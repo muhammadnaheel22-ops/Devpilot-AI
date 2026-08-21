@@ -43,8 +43,26 @@ export const aiRequestSchema = z.object({
 
 const modelCache = { expiresAt: 0, models: [] };
 
+export function isExplicitlyFreeOpenRouterModel(model) {
+  const id = model?.id || '';
+  const promptPrice = model?.pricing?.prompt;
+  const completionPrice = model?.pricing?.completion;
+  return (
+    (id === 'openrouter/free' || id.endsWith(':free')) &&
+    promptPrice !== null &&
+    promptPrice !== undefined &&
+    completionPrice !== null &&
+    completionPrice !== undefined &&
+    Number(promptPrice) === 0 &&
+    Number(completionPrice) === 0
+  );
+}
+
 export function getDefaultOpenRouterModel() {
-  return process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+  const configured = process.env.OPENROUTER_MODEL || '';
+  return configured === 'openrouter/free' || configured.endsWith(':free')
+    ? configured
+    : 'openrouter/free';
 }
 
 export function getOpenRouterMaxCompletionTokens() {
@@ -83,6 +101,7 @@ export async function listOpenRouterModels() {
       const outputModalities = model.architecture?.output_modalities || [];
       return (
         model?.id &&
+        isExplicitlyFreeOpenRouterModel(model) &&
         (outputModalities.includes('text') || model.architecture?.modality?.endsWith('->text'))
       );
     })
@@ -105,7 +124,7 @@ export async function listOpenRouterModels() {
     .sort((a, b) => a.provider.localeCompare(b.provider) || a.name.localeCompare(b.name));
 
   if (!models.length) {
-    throw Object.assign(new Error('OpenRouter returned no text-generation models.'), {
+    throw Object.assign(new Error('OpenRouter returned no free text-generation models.'), {
       status: 503,
     });
   }
@@ -118,12 +137,15 @@ async function validateAvailableModels(requestedModels) {
   const models = await listOpenRouterModels();
   const available = new Set(models.map((model) => model.id));
   const unavailable = requestedModels.find(
-    (model) => model !== 'openrouter/auto' && !available.has(model),
+    (model) => model !== 'openrouter/free' && !available.has(model),
   );
   if (unavailable) {
-    throw Object.assign(new Error('The selected OpenRouter model is not available.'), {
-      status: 400,
-    });
+    throw Object.assign(
+      new Error('The selected model is not available as a free OpenRouter model.'),
+      {
+        status: 400,
+      },
+    );
   }
 }
 
@@ -137,8 +159,8 @@ export async function resolveOpenRouterRouting({ routing, model: legacyModel }) 
   if (routing.mode === 'auto') {
     return {
       mode: 'auto',
-      requestedModels: ['openrouter/auto'],
-      requestBody: { model: 'openrouter/auto' },
+      requestedModels: ['openrouter/free'],
+      requestBody: { model: 'openrouter/free' },
     };
   }
 
@@ -276,7 +298,7 @@ export async function streamOpenRouter({
 }
 
 export function requestedModelForLog(request) {
-  if (request.routing?.mode === 'auto') return 'openrouter/auto';
+  if (request.routing?.mode === 'auto') return 'openrouter/free';
   return request.routing?.primaryModel || request.model || getDefaultOpenRouterModel();
 }
 

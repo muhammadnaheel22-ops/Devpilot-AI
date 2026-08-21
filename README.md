@@ -4,8 +4,8 @@ AI developer workspace built with React 19, Vite, Tailwind CSS, OpenRouter, Verc
 
 ## Features
 
-- Streamed OpenRouter chat and developer tools with the complete account model catalog.
-- Automatic prompt-based model selection, manual model selection, and ordered model fallbacks.
+- Streamed OpenRouter chat and developer tools with an explicitly free model catalog.
+- Free automatic model routing, manual model selection, and ordered free-model fallbacks.
 - Persistent routing preferences and response metadata showing which model answered.
 - Custom email/password authentication stored in Neon.
 - Server-created HTTP-only sessions, server-side password hashing, validation, and authorization.
@@ -35,7 +35,7 @@ Configure these values in `.env`:
 ```env
 VITE_API_BASE_URL=/api
 OPENROUTER_API_KEY=your-server-only-key
-OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_MODEL=openrouter/free
 OPENROUTER_MAX_COMPLETION_TOKENS=1024
 DATABASE_URL=postgresql://user:password@ep-example-pooler.region.aws.neon.tech/neondb?sslmode=require
 ADMIN_EMAILS=

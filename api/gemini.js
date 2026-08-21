@@ -1,5 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
+import { createGeminiContents } from '../server/geminiMessages.mjs';
+import { verifyOptionalFirebaseAuth } from '../server/firebaseAuth.mjs';
 
 const requestSchema = z.object({
   messages: z
@@ -16,44 +18,15 @@ const requestSchema = z.object({
   language: z.string().max(40).default('auto'),
 });
 
-function createGeminiContents(messages) {
-  // Remove the welcome message that appears before the first user message.
-  const firstUserIndex = messages.findIndex((message) => message.role === 'user');
-
-  if (firstUserIndex === -1) {
-    return [];
-  }
-
-  return messages.slice(firstUserIndex).reduce((contents, message) => {
-    const role = message.role === 'assistant' ? 'model' : 'user';
-    const text = message.content.trim();
-
-    if (!text) {
-      return contents;
-    }
-
-    const previousMessage = contents.at(-1);
-
-    // Gemini expects user and model roles to alternate.
-    if (previousMessage?.role === role) {
-      previousMessage.parts[0].text += `\n\n${text}`;
-    } else {
-      contents.push({
-        role,
-        parts: [{ text }],
-      });
-    }
-
-    return contents;
-  }, []);
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({
       message: 'Method not allowed',
     });
   }
+
+  const authResult = await verifyOptionalFirebaseAuth(req.headers.authorization);
+  if (!authResult.ok) return res.status(authResult.status).json({ message: authResult.message });
 
   const parsed = requestSchema.safeParse(req.body);
 
@@ -82,6 +55,7 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
 
   try {
     const ai = new GoogleGenAI({
@@ -89,7 +63,7 @@ export default async function handler(req, res) {
     });
 
     const stream = await ai.models.generateContentStream({
-      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
 
       contents,
 
@@ -116,6 +90,7 @@ Use properly formatted code blocks and explain important steps.
             text: chunk.text,
           })}\n\n`,
         );
+        res.flush?.();
       }
     }
 
@@ -124,6 +99,7 @@ Use properly formatted code blocks and explain important steps.
         done: true,
       })}\n\n`,
     );
+    res.flush?.();
 
     res.end();
   } catch (error) {
@@ -131,9 +107,10 @@ Use properly formatted code blocks and explain important steps.
 
     res.write(
       `data: ${JSON.stringify({
-        error: error?.message || 'Gemini generation failed. Check your API key, model and quota.',
+        error: 'Gemini generation failed. Check your API key, model and quota.',
       })}\n\n`,
     );
+    res.flush?.();
 
     res.end();
   }

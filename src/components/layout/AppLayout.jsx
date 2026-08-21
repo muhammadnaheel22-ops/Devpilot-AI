@@ -1,8 +1,17 @@
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { CommandPalette } from './CommandPalette';
+import { readStoredValue } from '../../utils/storage';
 export function AppLayout() {
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      'compact',
+      readStoredValue('devpilot-compact') === '1',
+    );
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Sidebar />

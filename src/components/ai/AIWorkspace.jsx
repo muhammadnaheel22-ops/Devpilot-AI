@@ -18,6 +18,7 @@ import { streamGemini } from '../../services/geminiService';
 import { useAuth } from '../../context/AuthContext';
 import { addUserSnippet, recordActivity } from '../../services/userDataService';
 import { exportJson, exportPdf, exportText } from '../../utils/export';
+import { useTheme } from '../../context/ThemeContext';
 const Editor = lazy(() => import('@monaco-editor/react'));
 const samples = {
   generate:
@@ -41,6 +42,7 @@ export function AIWorkspace({ mode, title, description }) {
   const [running, setRunning] = useState(false);
   const controller = useRef(null);
   const { getToken, user } = useAuth();
+  const { resolvedTheme } = useTheme();
   const promptText = useMemo(
     () => `${modePrompts[mode]}\n\nPreferred language: ${language}.\n\nUser request:\n${prompt}`,
     [mode, language, prompt],
@@ -112,7 +114,7 @@ export function AIWorkspace({ mode, title, description }) {
               <Editor
                 height="100%"
                 language={language === 'auto' ? 'markdown' : language}
-                theme={document.documentElement.classList.contains('dark') ? 'vs-dark' : 'light'}
+                theme={resolvedTheme === 'dark' ? 'vs-dark' : 'light'}
                 value={prompt}
                 onChange={(value) => setPrompt(value || '')}
                 options={{

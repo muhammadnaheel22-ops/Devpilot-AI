@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { setCommandOpen, toggleSidebar } from '../../store/uiSlice';
 export function Topbar() {
   const dispatch = useDispatch();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const { user } = useAuth();
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[var(--border)] bg-[color:var(--background)]/80 px-4 backdrop-blur-xl lg:px-6">
@@ -30,10 +30,10 @@ export function Topbar() {
       <div className="flex items-center gap-2">
         <button
           className="focus-ring rounded-xl p-2.5 hover:bg-violet-500/10"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
           aria-label="Toggle theme"
         >
-          {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+          {resolvedTheme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
         </button>
         <div
           className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 font-bold text-white"

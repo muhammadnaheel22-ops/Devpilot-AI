@@ -67,6 +67,16 @@ button {
   border: 1px solid var(--border);
   border-radius: 1.25rem;
 }
+.compact .panel {
+  border-radius: 0.9rem;
+}
+.compact main {
+  padding: 1rem !important;
+}
+.compact .panel.p-5,
+.compact .panel.p-6 {
+  padding: 1rem;
+}
 .text-muted {
   color: var(--muted);
 }

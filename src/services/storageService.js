@@ -1,23 +1,26 @@
+import { readStoredJson, writeStoredJson } from '../utils/storage';
+
 const SNIPPETS_KEY = 'devpilot-snippets';
 const ACTIVITY_KEY = 'devpilot-activity';
+const isArray = Array.isArray;
 export const localStore = {
-  getSnippets: () => JSON.parse(localStorage.getItem(SNIPPETS_KEY) || '[]'),
-  saveSnippets: (items) => localStorage.setItem(SNIPPETS_KEY, JSON.stringify(items)),
+  getSnippets: () => readStoredJson(SNIPPETS_KEY, [], isArray),
+  saveSnippets: (items) => writeStoredJson(SNIPPETS_KEY, items),
   addSnippet: (item) => {
     const next = [
-      { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...item },
+      { ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() },
       ...localStore.getSnippets(),
     ];
     localStore.saveSnippets(next);
     return next;
   },
-  getActivity: () => JSON.parse(localStorage.getItem(ACTIVITY_KEY) || '[]'),
+  getActivity: () => readStoredJson(ACTIVITY_KEY, [], isArray),
   addActivity: (activity) => {
     const next = [
-      { id: crypto.randomUUID(), at: new Date().toISOString(), ...activity },
+      { ...activity, id: crypto.randomUUID(), at: new Date().toISOString() },
       ...localStore.getActivity(),
     ].slice(0, 50);
-    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(next));
+    writeStoredJson(ACTIVITY_KEY, next);
     return next;
   },
 };

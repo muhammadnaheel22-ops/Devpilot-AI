@@ -19,6 +19,7 @@ export default function ApiTesterPage() {
         url,
         headers: JSON.parse(headers || '{}'),
         data: ['GET', 'DELETE'].includes(method) ? undefined : JSON.parse(body || '{}'),
+        timeout: 30_000,
         validateStatus: () => true,
       });
       setResult({

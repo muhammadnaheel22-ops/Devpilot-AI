@@ -14,6 +14,19 @@ const schema = z.object({
   mode: z.string().max(40).default('chat'),
   language: z.string().max(40).default('auto'),
 });
+const createGeminiContents = (messages) => {
+  const firstUserIndex = messages.findIndex((message) => message.role === 'user');
+  if (firstUserIndex === -1) return [];
+  return messages.slice(firstUserIndex).reduce((contents, message) => {
+    const role = message.role === 'assistant' ? 'model' : 'user';
+    const text = message.content.trim();
+    if (!text) return contents;
+    const previous = contents.at(-1);
+    if (previous?.role === role) previous.parts[0].text += `\n\n${text}`;
+    else contents.push({ role, parts: [{ text }] });
+    return contents;
+  }, []);
+};
 export const api = onRequest(
   { secrets: [geminiKey], cors: true, timeoutSeconds: 300, memory: '512MiB' },
   async (req, res) => {
@@ -28,17 +41,17 @@ export const api = onRequest(
     }
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: 'Invalid request' });
+    const { messages, mode, language } = parsed.data;
+    const contents = createGeminiContents(messages);
+    if (!contents.length) return res.status(400).json({ message: 'Please enter a user message.' });
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
     const ai = new GoogleGenAI({ apiKey: geminiKey.value() });
     try {
-      const { messages, mode, language } = parsed.data;
       const stream = await ai.models.generateContentStream({
         model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-        contents: messages.map((m) => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }],
-        })),
+        contents,
         config: {
           systemInstruction: `You are DevPilot AI. Mode: ${mode}. Preferred language: ${language}. Return secure production-ready software guidance in Markdown.`,
           temperature: 0.35,
@@ -46,12 +59,18 @@ export const api = onRequest(
         },
       });
       for await (const chunk of stream) {
-        if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+        if (chunk.text) {
+          res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+          res.flush?.();
+        }
       }
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.flush?.();
       res.end();
     } catch (e) {
       console.error(e);
       res.write(`data: ${JSON.stringify({ error: 'Gemini generation failed.' })}\n\n`);
+      res.flush?.();
       res.end();
     }
   },

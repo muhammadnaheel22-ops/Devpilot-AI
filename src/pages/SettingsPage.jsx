@@ -6,18 +6,20 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { uploadUserAsset } from '../services/userDataService';
+import { readStoredValue, writeStoredValue } from '../utils/storage';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user, logout, updateUserProfile, isFirebaseConfigured } = useAuth();
   const navigate = useNavigate();
-  const [compact, setCompact] = useState(localStorage.getItem('devpilot-compact') === '1');
+  const [compact, setCompact] = useState(readStoredValue('devpilot-compact') === '1');
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [uploading, setUploading] = useState(false);
 
   const save = async () => {
     try {
-      localStorage.setItem('devpilot-compact', compact ? '1' : '0');
+      writeStoredValue('devpilot-compact', compact ? '1' : '0');
+      document.documentElement.classList.toggle('compact', compact);
       await updateUserProfile({ displayName });
       toast.success('Settings saved');
     } catch (error) {

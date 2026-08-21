@@ -12,8 +12,10 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, isFirebaseConfigured } from '../firebase/firebase';
 import { localStore } from './storageService';
+import { readStoredJson, writeStoredJson } from '../utils/storage';
 
 const isCloudUser = (uid) => isFirebaseConfigured && db && uid && uid !== 'demo-user';
+const CONVERSATIONS_KEY = 'devpilot-conversations';
 const normalizeDate = (value) =>
   value?.toDate?.().toISOString?.() || value || new Date().toISOString();
 
@@ -23,8 +25,8 @@ export async function getUserSnippets(uid) {
     query(collection(db, 'users', uid, 'snippets'), orderBy('createdAt', 'desc'), limit(100)),
   );
   return snapshot.docs.map((item) => ({
-    id: item.id,
     ...item.data(),
+    id: item.id,
     createdAt: normalizeDate(item.data().createdAt),
   }));
 }
@@ -36,7 +38,7 @@ export async function addUserSnippet(uid, item) {
     ...item,
     createdAt: serverTimestamp(),
   });
-  return { id: result.id, ...item, createdAt: new Date().toISOString() };
+  return { ...item, id: result.id, createdAt: new Date().toISOString() };
 }
 
 export async function deleteUserSnippet(uid, id) {
@@ -51,8 +53,8 @@ export async function getUserActivity(uid) {
     query(collection(db, 'users', uid, 'activity'), orderBy('at', 'desc'), limit(50)),
   );
   return snapshot.docs.map((item) => ({
-    id: item.id,
     ...item.data(),
+    id: item.id,
     at: normalizeDate(item.data().at),
   }));
 }
@@ -64,21 +66,21 @@ export async function recordActivity(uid, activity) {
 }
 
 export async function getConversations(uid) {
-  if (!isCloudUser(uid)) return JSON.parse(localStorage.getItem('devpilot-conversations') || '[]');
+  if (!isCloudUser(uid)) return readStoredJson(CONVERSATIONS_KEY, [], Array.isArray);
   const snapshot = await getDocs(
     query(collection(db, 'users', uid, 'conversations'), orderBy('updatedAt', 'desc'), limit(20)),
   );
   return snapshot.docs.map((item) => ({
-    id: item.id,
     ...item.data(),
+    id: item.id,
     updatedAt: normalizeDate(item.data().updatedAt),
   }));
 }
 
 export async function saveConversation(uid, conversation) {
-  const local = JSON.parse(localStorage.getItem('devpilot-conversations') || '[]');
-  const item = { id: crypto.randomUUID(), updatedAt: new Date().toISOString(), ...conversation };
-  localStorage.setItem('devpilot-conversations', JSON.stringify([item, ...local].slice(0, 20)));
+  const local = readStoredJson(CONVERSATIONS_KEY, [], Array.isArray);
+  const item = { ...conversation, id: crypto.randomUUID(), updatedAt: new Date().toISOString() };
+  writeStoredJson(CONVERSATIONS_KEY, [item, ...local].slice(0, 20));
   if (!isCloudUser(uid)) return item;
   const result = await addDoc(collection(db, 'users', uid, 'conversations'), {
     ...conversation,

@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Copy, Search, Star } from 'lucide-react';
 import { promptLibrary } from '../constants/prompts';
+import { readStoredJson, writeStoredJson } from '../utils/storage';
 export default function PromptLibraryPage() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem('devpilot-prompt-favorites') || '[]'),
+    readStoredJson('devpilot-prompt-favorites', [], Array.isArray),
   );
   const categories = ['All', ...new Set(promptLibrary.map((p) => p.category))];
   const results = useMemo(
@@ -23,7 +24,7 @@ export default function PromptLibraryPage() {
       ? favorites.filter((x) => x !== title)
       : [...favorites, title];
     setFavorites(next);
-    localStorage.setItem('devpilot-prompt-favorites', JSON.stringify(next));
+    writeStoredJson('devpilot-prompt-favorites', next);
   };
   return (
     <div>

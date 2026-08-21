@@ -1,4 +1,5 @@
 import { appEnv } from '../config/env';
+import { consumeSseStream } from '../utils/sse';
 
 export async function streamGemini({
   messages,
@@ -23,21 +24,5 @@ export async function streamGemini({
     throw new Error(payload.message || `AI request failed (${response.status})`);
   }
   if (!response.body) throw new Error('Streaming is not supported in this browser.');
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const events = buffer.split('\n\n');
-    buffer = events.pop() || '';
-    for (const event of events) {
-      const line = event.split('\n').find((item) => item.startsWith('data:'));
-      if (!line) continue;
-      const data = JSON.parse(line.slice(5).trim());
-      if (data.error) throw new Error(data.error);
-      if (data.text) onChunk(data.text);
-    }
-  }
+  await consumeSseStream(response.body, onChunk);
 }

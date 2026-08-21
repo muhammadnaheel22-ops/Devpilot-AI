@@ -1,17 +1,39 @@
 export const formatJson = (value, indent = 2) => JSON.stringify(JSON.parse(value), null, indent);
 export const minifyJson = (value) => JSON.stringify(JSON.parse(value));
-export const encodeBase64 = (value) => btoa(unescape(encodeURIComponent(value)));
-export const decodeBase64 = (value) => decodeURIComponent(escape(atob(value)));
+export const encodeBase64 = (value) => {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+};
+export const decodeBase64 = (value) => {
+  const normalized = value.replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+};
 export const uuid = () => crypto.randomUUID();
 
 export const generatePassword = (length = 20) => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
-  const values = crypto.getRandomValues(new Uint32Array(length));
-  return Array.from(values, (value) => chars[value % chars.length]).join('');
+  const size = Math.max(4, Math.min(128, Math.trunc(Number(length)) || 20));
+  const limit = 256 - (256 % chars.length);
+  let result = '';
+  while (result.length < size) {
+    const values = crypto.getRandomValues(new Uint8Array(size - result.length));
+    for (const value of values) {
+      if (value < limit) result += chars[value % chars.length];
+    }
+  }
+  return result;
 };
 
-export const decodeJwt = (token) =>
-  JSON.parse(decodeBase64(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+export const decodeJwt = (token) => {
+  const parts = token.trim().split('.');
+  if (parts.length !== 3 || !parts[1]) throw new Error('Enter a valid three-part JWT.');
+  return JSON.parse(decodeBase64(parts[1]));
+};
 
 export const timestampInfo = (value) => {
   const numeric = Number(value);
@@ -77,7 +99,7 @@ export const minifyJavaScript = (value) =>
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .join(' ');
+    .join('\n');
 
 export const diffLines = (before, after) => {
   const left = before.split('\n');

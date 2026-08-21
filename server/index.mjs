@@ -6,8 +6,8 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { createGeminiContents } from './geminiMessages.mjs';
+import { verifyOptionalFirebaseAuth } from './firebaseAuth.mjs';
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
@@ -43,35 +43,11 @@ const RequestSchema = z.object({
   options: z.record(z.string(), z.unknown()).optional(),
 });
 
-let adminAuth = null;
-if (
-  process.env.FIREBASE_PROJECT_ID &&
-  process.env.FIREBASE_CLIENT_EMAIL &&
-  process.env.FIREBASE_PRIVATE_KEY
-) {
-  const adminApp =
-    getApps()[0] ||
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      }),
-    });
-  adminAuth = getAuth(adminApp);
-}
 async function verifyAuth(req, res, next) {
-  if (process.env.REQUIRE_AUTH !== 'true') return next();
-  if (!adminAuth)
-    return res.status(503).json({ message: 'Server authentication is not configured.' });
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ message: 'Authentication required.' });
-  try {
-    req.user = await adminAuth.verifyIdToken(token);
-    return next();
-  } catch {
-    return res.status(401).json({ message: 'Invalid or expired session.' });
-  }
+  const result = await verifyOptionalFirebaseAuth(req.headers.authorization);
+  if (!result.ok) return res.status(result.status).json({ message: result.message });
+  req.user = result.user;
+  return next();
 }
 function systemInstruction(mode, language) {
   return `You are DevPilot AI, a senior software engineer and secure coding assistant. Mode: ${mode}. Preferred language: ${language}. Produce accurate, maintainable, production-ready answers. State assumptions. Never invent executed test results. Never expose secrets. Prefer parameterized queries, input validation, accessible UI, explicit error handling, and concise setup instructions. Use Markdown with fenced code blocks and file names.`;
@@ -89,17 +65,16 @@ app.post('/api/gemini/stream', verifyAuth, async (req, res) => {
     return res.status(400).json({ message: 'Invalid request.', issues: parsed.error.issues });
   if (!process.env.GEMINI_API_KEY)
     return res.status(503).json({ message: 'GEMINI_API_KEY is not configured on the server.' });
+  const { messages, mode, language } = parsed.data;
+  const contents = createGeminiContents(messages);
+  if (!contents.length) return res.status(400).json({ message: 'Please enter a user message.' });
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   try {
-    const { messages, mode, language } = parsed.data;
-    const contents = messages.map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
     const stream = await ai.models.generateContentStream({
       model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
       contents,
@@ -111,15 +86,20 @@ app.post('/api/gemini/stream', verifyAuth, async (req, res) => {
     });
     for await (const chunk of stream) {
       const text = chunk.text;
-      if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`);
+      if (text) {
+        res.write(`data: ${JSON.stringify({ text })}\n\n`);
+        res.flush?.();
+      }
     }
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.flush?.();
     res.end();
   } catch (error) {
     console.error(error);
     res.write(
       `data: ${JSON.stringify({ error: 'Gemini generation failed. Check model access, quota, and server logs.' })}\n\n`,
     );
+    res.flush?.();
     res.end();
   }
 });

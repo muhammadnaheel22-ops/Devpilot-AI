@@ -4,8 +4,24 @@
 [functions]
   node_bundler = "esbuild"
 [[redirects]]
-  from = "/api/gemini/stream"
-  to = "/.netlify/functions/gemini"
+  from = "/api/auth/*"
+  to = "/.netlify/functions/auth?action=:splat"
+  status = 200
+[[redirects]]
+  from = "/api/data/*"
+  to = "/.netlify/functions/data?path=:splat"
+  status = 200
+[[redirects]]
+  from = "/api/openrouter/models"
+  to = "/.netlify/functions/openrouter"
+  status = 200
+[[redirects]]
+  from = "/api/openrouter/stream"
+  to = "/.netlify/functions/openrouter"
+  status = 200
+[[redirects]]
+  from = "/api/admin/overview"
+  to = "/.netlify/functions/admin"
   status = 200
 [[redirects]]
   from = "/*"

@@ -1,16 +1,22 @@
 # Architecture
 
 ```text
-Browser (React 19 + Redux + TanStack Query + Monaco)
-  | Firebase Authentication ID token
-  | HTTPS/SSE
+Browser (React)
+  | HTTP-only session cookie
+  | HTTPS / server-sent events
   v
-Gemini API adapter (Express / Vercel / Netlify / Firebase Functions)
-  | validation + rate limits + auth + server-only secret
-  v
-Google Gemini API
+Vercel Functions (also available through local Express)
+  | session validation and authorization
+  +---------------------> OpenRouter chat completions API
+  |
+  +---------------------> Neon Serverless Postgres over HTTP
 
-Browser <-> Firebase Auth / Firestore / Storage
+Admin dashboard
+  | database-backed is_admin role
+  v
+Admin API -> Neon account directory + Neon usage records
 ```
 
-The frontend is feature-oriented and lazy-loaded. AI modules reuse one `AIWorkspace`, keeping prompt policies, streaming, language selection, editor behavior, exports, and history consistent. Hosting adapters deliberately expose the same `/api/gemini/stream` contract.
+Neon stores application accounts, password hashes, session hashes, profiles, snippets, activity, conversations, and AI request audit records. The browser never receives the Neon connection string, OpenRouter key, password hashes, or raw session records.
+
+Vercel Functions use `@neondatabase/serverless` for one-shot queries. The schema is versioned in `database/schema.sql` and applied with `npm run db:migrate`.

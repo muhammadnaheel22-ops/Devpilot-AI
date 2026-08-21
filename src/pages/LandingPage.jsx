@@ -48,7 +48,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-              {['Secure server-side AI', 'Firebase authentication', '30+ languages'].map((x) => (
+              {['Secure server-side AI', 'Neon authentication', '30+ languages'].map((x) => (
                 <span className="flex items-center gap-2" key={x}>
                   <Check className="text-emerald-500" size={16} />
                   {x}
@@ -118,7 +118,7 @@ export default function LandingPage() {
             [
               LockKeyhole,
               'Security first',
-              'Gemini secrets stay on the server, with validation, rate limiting, optional Firebase token verification, and restrictive database rules.',
+              'OpenRouter secrets stay on the server, with validation, rate limiting, secure sessions, and database authorization.',
             ],
             [
               Workflow,

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Bot, Plus, RefreshCw, Send, Square, StepForward, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { LanguageSelect } from '../components/ui/LanguageSelect';
+import { ModelSelect } from '../components/ui/ModelSelect';
 import { MarkdownRenderer } from '../components/common/MarkdownRenderer';
-import { streamGemini } from '../services/geminiService';
+import { getOpenRouterModels, streamOpenRouter } from '../services/openRouterService';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, recordActivity, saveConversation } from '../services/userDataService';
 
@@ -13,21 +15,52 @@ const initialMessage = {
   content:
     'Hello! I’m DevPilot AI. Ask me to build, explain, debug, optimize, or document software.',
 };
+const fallbackModel = 'openai/gpt-4o-mini';
 
 export default function AIChatPage() {
-  const [messages, setMessages] = useState([initialMessage]);
+  const location = useLocation();
+  const restoredConversation = location.state?.conversation;
+  const [messages, setMessages] = useState(
+    () => restoredConversation?.messages || [initialMessage],
+  );
   const [input, setInput] = useState('');
-  const [language, setLanguage] = useState('auto');
+  const [language, setLanguage] = useState(() => restoredConversation?.language || 'auto');
+  const [model, setModel] = useState(fallbackModel);
+  const [models, setModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState([]);
   const controller = useRef(null);
-  const { getToken, user } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     getConversations(user?.uid)
       .then(setHistory)
       .catch(() => {});
   }, [user?.uid]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    let active = true;
+    getOpenRouterModels({ signal: abortController.signal })
+      .then(({ models: availableModels, defaultModel }) => {
+        if (!active) return;
+        setModels(availableModels);
+        setModel((current) =>
+          availableModels.some((item) => item.id === current) ? current : defaultModel,
+        );
+      })
+      .catch((error) => {
+        if (active && error.name !== 'AbortError') toast.error('Could not refresh the model list.');
+      })
+      .finally(() => {
+        if (active) setModelsLoading(false);
+      });
+    return () => {
+      active = false;
+      abortController.abort();
+    };
+  }, []);
 
   const newConversation = () => setMessages([initialMessage]);
 
@@ -38,12 +71,11 @@ export default function AIChatPage() {
     let answer = '';
 
     try {
-      const token = await getToken();
-      await streamGemini({
+      await streamOpenRouter({
         messages: requestMessages,
         mode: 'chat',
         language,
-        token,
+        model,
         signal: controller.current.signal,
         onChunk: (chunk) => {
           answer += chunk;
@@ -63,6 +95,7 @@ export default function AIChatPage() {
           title: `AI Chat: ${titleText.slice(0, 60)}`,
           mode: 'chat',
           language,
+          details: titleText,
         }),
         saveConversation(user?.uid, {
           title: titleText.slice(0, 70),
@@ -121,6 +154,13 @@ export default function AIChatPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ModelSelect
+            value={model}
+            models={models}
+            onChange={setModel}
+            loading={modelsLoading}
+            disabled={running}
+          />
           <LanguageSelect value={language} onChange={setLanguage} />
           <Button variant="secondary" onClick={regenerate} disabled={running}>
             <RefreshCw size={17} /> Regenerate

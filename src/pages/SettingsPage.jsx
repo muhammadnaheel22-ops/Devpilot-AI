@@ -1,43 +1,28 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Camera, LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
-import { uploadUserAsset } from '../services/userDataService';
 import { readStoredValue, writeStoredValue } from '../utils/storage';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { user, logout, updateUserProfile, isFirebaseConfigured } = useAuth();
+  const { user, logout, updateUserProfile } = useAuth();
   const navigate = useNavigate();
   const [compact, setCompact] = useState(readStoredValue('devpilot-compact') === '1');
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [uploading, setUploading] = useState(false);
+  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
 
   const save = async () => {
     try {
       writeStoredValue('devpilot-compact', compact ? '1' : '0');
       document.documentElement.classList.toggle('compact', compact);
-      await updateUserProfile({ displayName });
+      await updateUserProfile({ displayName, photoURL: photoURL || null });
       toast.success('Settings saved');
     } catch (error) {
       toast.error(error.message);
-    }
-  };
-
-  const uploadAvatar = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const photoURL = await uploadUserAsset(user?.uid, file);
-      await updateUserProfile({ photoURL });
-      toast.success('Profile photo updated');
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -83,7 +68,7 @@ export default function SettingsPage() {
         <section className="panel p-5">
           <h2 className="text-lg font-bold">Account</h2>
           <div className="mt-4 flex flex-col gap-4 rounded-xl bg-[var(--surface)] p-4 sm:flex-row sm:items-center">
-            <div className="relative h-20 w-20 shrink-0">
+            <div className="h-20 w-20 shrink-0">
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -95,16 +80,6 @@ export default function SettingsPage() {
                   {(user?.displayName || user?.email || 'U')[0].toUpperCase()}
                 </div>
               )}
-              <label className="absolute -bottom-2 -right-2 grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-violet-600 text-white shadow-lg">
-                <Camera size={17} />
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(event) => uploadAvatar(event.target.files?.[0])}
-                />
-              </label>
             </div>
             <div className="flex-1">
               <label className="text-sm font-medium">Display name</label>
@@ -113,14 +88,19 @@ export default function SettingsPage() {
                 onChange={(event) => setDisplayName(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none"
               />
+              <label className="mt-3 block text-sm font-medium">Profile image URL</label>
+              <input
+                value={photoURL}
+                onChange={(event) => setPhotoURL(event.target.value)}
+                placeholder="https://example.com/avatar.png"
+                className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none"
+              />
               <div className="text-muted mt-2 text-sm">{user?.email}</div>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 text-sm text-emerald-500">
             <ShieldCheck size={18} />
-            {isFirebaseConfigured
-              ? 'Firebase authentication and cloud storage configured'
-              : 'Demo authentication active'}
+            Secure Neon account and HTTP-only session active
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button onClick={save}>Save account</Button>
@@ -139,9 +119,9 @@ export default function SettingsPage() {
         <section className="panel p-5">
           <h2 className="text-lg font-bold">Privacy & security</h2>
           <ul className="text-muted mt-4 space-y-3 text-sm leading-6">
-            <li>• Gemini API keys are read only by server-side code.</li>
-            <li>• The client sends a Firebase ID token when real authentication is enabled.</li>
-            <li>• Firestore and Storage rules restrict each user to their own data.</li>
+            <li>• OpenRouter API keys are read only by server-side code.</li>
+            <li>• Passwords are hashed on the server and sessions use HTTP-only cookies.</li>
+            <li>• Neon data is accessed only through authenticated Vercel API routes.</li>
             <li>
               • AI requests are size-limited, validated, rate-limited, and protected with security
               headers.

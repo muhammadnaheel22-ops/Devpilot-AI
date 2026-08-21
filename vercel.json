@@ -1,6 +1,11 @@
 {
   "rewrites": [
-    { "source": "/api/gemini/stream", "destination": "/api/gemini" },
+    { "source": "/api/auth/:action", "destination": "/api/auth?action=:action" },
+    { "source": "/api/openrouter/models", "destination": "/api/openrouter" },
+    { "source": "/api/openrouter/stream", "destination": "/api/openrouter" },
+    { "source": "/api/admin/overview", "destination": "/api/admin" },
+    { "source": "/api/data/:resource/:id", "destination": "/api/data?resource=:resource&id=:id" },
+    { "source": "/api/data/:resource", "destination": "/api/data?resource=:resource" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

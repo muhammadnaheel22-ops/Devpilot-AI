@@ -10,6 +10,7 @@ const extra = [
   { title: 'REST API Tester', path: '/app/api-tester' },
   { title: 'Prompt Library', path: '/app/prompts' },
   { title: 'Saved Snippets', path: '/app/snippets' },
+  { title: 'History', path: '/app/history' },
   { title: 'Settings', path: '/app/settings' },
 ];
 export function CommandPalette() {

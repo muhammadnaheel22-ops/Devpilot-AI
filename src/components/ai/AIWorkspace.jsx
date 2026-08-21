@@ -14,7 +14,7 @@ import { Button } from '../ui/Button';
 import { LanguageSelect } from '../ui/LanguageSelect';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { modePrompts } from '../../constants/tools';
-import { streamGemini } from '../../services/geminiService';
+import { streamOpenRouter } from '../../services/openRouterService';
 import { useAuth } from '../../context/AuthContext';
 import { addUserSnippet, recordActivity } from '../../services/userDataService';
 import { exportJson, exportPdf, exportText } from '../../utils/export';
@@ -41,7 +41,7 @@ export function AIWorkspace({ mode, title, description }) {
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
   const controller = useRef(null);
-  const { getToken, user } = useAuth();
+  const { user } = useAuth();
   const { resolvedTheme } = useTheme();
   const promptText = useMemo(
     () => `${modePrompts[mode]}\n\nPreferred language: ${language}.\n\nUser request:\n${prompt}`,
@@ -53,12 +53,10 @@ export function AIWorkspace({ mode, title, description }) {
     setOutput('');
     controller.current = new AbortController();
     try {
-      const token = await getToken();
-      await streamGemini({
+      await streamOpenRouter({
         messages: [{ role: 'user', content: promptText }],
         mode,
         language,
-        token,
         signal: controller.current.signal,
         onChunk: (chunk) => setOutput((v) => v + chunk),
       });
@@ -66,6 +64,7 @@ export function AIWorkspace({ mode, title, description }) {
         title: `${title}: ${prompt.slice(0, 60)}`,
         mode,
         language,
+        details: prompt,
       });
     } catch (e) {
       if (e.name !== 'AbortError') toast.error(e.message);

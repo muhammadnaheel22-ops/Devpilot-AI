@@ -4,7 +4,9 @@ AI developer workspace built with React 19, Vite, Tailwind CSS, OpenRouter, Verc
 
 ## Features
 
-- Streamed OpenRouter chat and developer tools with selectable models.
+- Streamed OpenRouter chat and developer tools with the complete account model catalog.
+- Automatic prompt-based model selection, manual model selection, and ordered model fallbacks.
+- Persistent routing preferences and response metadata showing which model answered.
 - Custom email/password authentication stored in Neon.
 - Server-created HTTP-only sessions, server-side password hashing, validation, and authorization.
 - Neon-backed accounts, profiles, conversations, snippets, activity, AI logs, and administrator roles.

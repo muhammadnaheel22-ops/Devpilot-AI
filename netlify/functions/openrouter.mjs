@@ -4,6 +4,7 @@ import {
   getDefaultOpenRouterModel,
   listOpenRouterModels,
   recordAiRequest,
+  requestedModelForLog,
   streamOpenRouter,
 } from '../../server/backend.mjs';
 import { publicErrorMessage } from '../../server/errors.mjs';
@@ -14,6 +15,9 @@ export default async (request) => {
       return Response.json({
         models: await listOpenRouterModels(),
         defaultModel: getDefaultOpenRouterModel(),
+        routingModes: ['auto', 'manual', 'fallback'],
+        autoModel: 'openrouter/auto',
+        maxFallbacks: 5,
       });
     } catch (error) {
       return Response.json(
@@ -61,7 +65,14 @@ export default async (request) => {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)),
         });
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ done: true, model: result.model })}\n\n`),
+          encoder.encode(
+            `data: ${JSON.stringify({
+              done: true,
+              model: result.model,
+              requestedModels: result.requestedModels,
+              routingMode: result.routingMode,
+            })}\n\n`,
+          ),
         );
         await recordAiRequest({
           uid: user?.uid || 'anonymous',
@@ -74,6 +85,15 @@ export default async (request) => {
           durationMs: Date.now() - startedAt,
         });
       } catch (error) {
+        await recordAiRequest({
+          uid: user?.uid || 'anonymous',
+          email: user?.email || null,
+          mode: parsed.data.mode,
+          language: parsed.data.language,
+          model: requestedModelForLog(parsed.data),
+          status: 'error',
+          durationMs: Date.now() - startedAt,
+        }).catch(console.error);
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({ error: publicErrorMessage(error, 'OpenRouter generation failed.') })}\n\n`,

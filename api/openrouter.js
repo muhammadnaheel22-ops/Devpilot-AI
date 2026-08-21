@@ -4,6 +4,7 @@ import {
   getDefaultOpenRouterModel,
   listOpenRouterModels,
   recordAiRequest,
+  requestedModelForLog,
   streamOpenRouter,
 } from '../server/backend.mjs';
 import { publicErrorMessage } from '../server/errors.mjs';
@@ -16,6 +17,9 @@ export default async function handler(req, res) {
       return res.json({
         models: await listOpenRouterModels(),
         defaultModel: getDefaultOpenRouterModel(),
+        routingModes: ['auto', 'manual', 'fallback'],
+        autoModel: 'openrouter/auto',
+        maxFallbacks: 5,
       });
     } catch (error) {
       return res
@@ -44,7 +48,14 @@ export default async function handler(req, res) {
         res.flush?.();
       },
     });
-    res.write(`data: ${JSON.stringify({ done: true, model: result.model })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        done: true,
+        model: result.model,
+        requestedModels: result.requestedModels,
+        routingMode: result.routingMode,
+      })}\n\n`,
+    );
     res.flush?.();
     res.end();
     await recordAiRequest({
@@ -72,7 +83,7 @@ export default async function handler(req, res) {
       email: user?.email || null,
       mode: parsed.data.mode,
       language: parsed.data.language,
-      model: parsed.data.model || getDefaultOpenRouterModel(),
+      model: requestedModelForLog(parsed.data),
       status: 'error',
       durationMs: Date.now() - startedAt,
     }).catch(console.error);

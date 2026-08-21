@@ -6,8 +6,10 @@ export async function streamOpenRouter({
   mode,
   language,
   model,
+  routing,
   options = {},
   onChunk,
+  onComplete,
   signal,
 }) {
   const response = await fetch(`${appEnv.apiBaseUrl}/openrouter/stream`, {
@@ -16,7 +18,7 @@ export async function streamOpenRouter({
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ messages, mode, language, model, options }),
+    body: JSON.stringify({ messages, mode, language, model, routing, options }),
     signal,
   });
   if (!response.ok) {
@@ -25,7 +27,14 @@ export async function streamOpenRouter({
   }
   if (!response.body) throw new Error('Streaming is not supported in this browser.');
 
-  await consumeSseStream(response.body, onChunk);
+  let completion = null;
+  await consumeSseStream(response.body, onChunk, (event) => {
+    if (event.done) {
+      completion = event;
+      onComplete?.(event);
+    }
+  });
+  return completion;
 }
 
 export async function getOpenRouterModels({ signal } = {}) {

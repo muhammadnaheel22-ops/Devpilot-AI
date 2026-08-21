@@ -4,10 +4,11 @@ import { Bot, Plus, RefreshCw, Send, Square, StepForward, User } from 'lucide-re
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { LanguageSelect } from '../components/ui/LanguageSelect';
-import { ModelSelect } from '../components/ui/ModelSelect';
+import { ModelRoutingControl } from '../components/ai/ModelRoutingControl';
 import { MarkdownRenderer } from '../components/common/MarkdownRenderer';
-import { getOpenRouterModels, streamOpenRouter } from '../services/openRouterService';
+import { streamOpenRouter } from '../services/openRouterService';
 import { useAuth } from '../context/AuthContext';
+import { useModelRouting } from '../hooks/useModelRouting';
 import { getConversations, recordActivity, saveConversation } from '../services/userDataService';
 
 const initialMessage = {
@@ -15,8 +16,6 @@ const initialMessage = {
   content:
     'Hello! I’m DevPilot AI. Ask me to build, explain, debug, optimize, or document software.',
 };
-const fallbackModel = 'openai/gpt-4o-mini';
-
 export default function AIChatPage() {
   const location = useLocation();
   const restoredConversation = location.state?.conversation;
@@ -25,13 +24,12 @@ export default function AIChatPage() {
   );
   const [input, setInput] = useState('');
   const [language, setLanguage] = useState(() => restoredConversation?.language || 'auto');
-  const [model, setModel] = useState(fallbackModel);
-  const [models, setModels] = useState([]);
-  const [modelsLoading, setModelsLoading] = useState(true);
+  const [routeResult, setRouteResult] = useState(null);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState([]);
   const controller = useRef(null);
   const { user } = useAuth();
+  const { models, modelsLoading, routing, setRouting, requestRouting } = useModelRouting();
 
   useEffect(() => {
     getConversations(user?.uid)
@@ -39,33 +37,14 @@ export default function AIChatPage() {
       .catch(() => {});
   }, [user?.uid]);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    let active = true;
-    getOpenRouterModels({ signal: abortController.signal })
-      .then(({ models: availableModels, defaultModel }) => {
-        if (!active) return;
-        setModels(availableModels);
-        setModel((current) =>
-          availableModels.some((item) => item.id === current) ? current : defaultModel,
-        );
-      })
-      .catch((error) => {
-        if (active && error.name !== 'AbortError') toast.error('Could not refresh the model list.');
-      })
-      .finally(() => {
-        if (active) setModelsLoading(false);
-      });
-    return () => {
-      active = false;
-      abortController.abort();
-    };
-  }, []);
-
-  const newConversation = () => setMessages([initialMessage]);
+  const newConversation = () => {
+    setMessages([initialMessage]);
+    setRouteResult(null);
+  };
 
   const runGeneration = async (requestMessages, titleText) => {
     setMessages([...requestMessages, { role: 'assistant', content: '' }]);
+    setRouteResult(null);
     setRunning(true);
     controller.current = new AbortController();
     let answer = '';
@@ -75,7 +54,7 @@ export default function AIChatPage() {
         messages: requestMessages,
         mode: 'chat',
         language,
-        model,
+        routing: requestRouting,
         signal: controller.current.signal,
         onChunk: (chunk) => {
           answer += chunk;
@@ -87,6 +66,7 @@ export default function AIChatPage() {
             ),
           );
         },
+        onComplete: setRouteResult,
       });
 
       const completedMessages = [...requestMessages, { role: 'assistant', content: answer }];
@@ -154,13 +134,6 @@ export default function AIChatPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ModelSelect
-            value={model}
-            models={models}
-            onChange={setModel}
-            loading={modelsLoading}
-            disabled={running}
-          />
           <LanguageSelect value={language} onChange={setLanguage} />
           <Button variant="secondary" onClick={regenerate} disabled={running}>
             <RefreshCw size={17} /> Regenerate
@@ -172,6 +145,26 @@ export default function AIChatPage() {
             <Plus size={17} /> New
           </Button>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <ModelRoutingControl
+          routing={routing}
+          setRouting={setRouting}
+          models={models}
+          loading={modelsLoading}
+          disabled={running}
+        />
+        {routeResult?.model && (
+          <div className="mt-2 text-right text-xs text-emerald-500">
+            {routeResult.routingMode === 'auto'
+              ? 'Auto selected'
+              : routeResult.routingMode === 'fallback'
+                ? 'Route completed with'
+                : 'Model used'}
+            : <span className="font-mono">{routeResult.model}</span>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[230px_1fr]">

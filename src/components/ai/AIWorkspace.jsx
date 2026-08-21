@@ -19,6 +19,8 @@ import { useAuth } from '../../context/AuthContext';
 import { addUserSnippet, recordActivity } from '../../services/userDataService';
 import { exportJson, exportPdf, exportText } from '../../utils/export';
 import { useTheme } from '../../context/ThemeContext';
+import { useModelRouting } from '../../hooks/useModelRouting';
+import { ModelRoutingControl } from './ModelRoutingControl';
 const Editor = lazy(() => import('@monaco-editor/react'));
 const samples = {
   generate:
@@ -40,9 +42,11 @@ export function AIWorkspace({ mode, title, description }) {
   const [prompt, setPrompt] = useState(samples[mode] || '');
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
+  const [routeResult, setRouteResult] = useState(null);
   const controller = useRef(null);
   const { user } = useAuth();
   const { resolvedTheme } = useTheme();
+  const { models, modelsLoading, routing, setRouting, requestRouting } = useModelRouting();
   const promptText = useMemo(
     () => `${modePrompts[mode]}\n\nPreferred language: ${language}.\n\nUser request:\n${prompt}`,
     [mode, language, prompt],
@@ -51,14 +55,17 @@ export function AIWorkspace({ mode, title, description }) {
     if (!prompt.trim()) return toast.error('Enter a request or code first');
     setRunning(true);
     setOutput('');
+    setRouteResult(null);
     controller.current = new AbortController();
     try {
       await streamOpenRouter({
         messages: [{ role: 'user', content: promptText }],
         mode,
         language,
+        routing: requestRouting,
         signal: controller.current.signal,
         onChunk: (chunk) => setOutput((v) => v + chunk),
+        onComplete: setRouteResult,
       });
       await recordActivity(user?.uid, {
         title: `${title}: ${prompt.slice(0, 60)}`,
@@ -98,6 +105,20 @@ export function AIWorkspace({ mode, title, description }) {
           <p className="text-muted mt-2 max-w-3xl">{description}</p>
         </div>
         <LanguageSelect value={language} onChange={setLanguage} />
+      </div>
+      <div className="mt-5">
+        <ModelRoutingControl
+          routing={routing}
+          setRouting={setRouting}
+          models={models}
+          loading={modelsLoading}
+          disabled={running}
+        />
+        {routeResult?.model && (
+          <div className="mt-2 text-right text-xs text-emerald-500">
+            Response model: <span className="font-mono">{routeResult.model}</span>
+          </div>
+        )}
       </div>
       <div className="mt-6 grid min-h-[650px] gap-5 xl:grid-cols-2">
         <section className="panel overflow-hidden">

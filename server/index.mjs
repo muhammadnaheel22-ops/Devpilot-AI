@@ -11,6 +11,7 @@ import {
   getAdminOverview,
   listOpenRouterModels,
   recordAiRequest,
+  requestedModelForLog,
   streamOpenRouter,
 } from './backend.mjs';
 import { runDataOperation } from './data-api.mjs';
@@ -108,7 +109,13 @@ app.patch('/api/auth/profile', async (req, res, next) => {
 
 app.get('/api/openrouter/models', async (_req, res, next) => {
   try {
-    res.json({ models: await listOpenRouterModels(), defaultModel: getDefaultOpenRouterModel() });
+    res.json({
+      models: await listOpenRouterModels(),
+      defaultModel: getDefaultOpenRouterModel(),
+      routingModes: ['auto', 'manual', 'fallback'],
+      autoModel: 'openrouter/auto',
+      maxFallbacks: 5,
+    });
   } catch (error) {
     next(error);
   }
@@ -161,7 +168,14 @@ app.post('/api/openrouter/stream', async (req, res, next) => {
         res.flush?.();
       },
     });
-    res.write(`data: ${JSON.stringify({ done: true, model: result.model })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        done: true,
+        model: result.model,
+        requestedModels: result.requestedModels,
+        routingMode: result.routingMode,
+      })}\n\n`,
+    );
     res.flush?.();
     res.end();
     await recordAiRequest({
@@ -186,7 +200,7 @@ app.post('/api/openrouter/stream', async (req, res, next) => {
       email: user?.email || null,
       mode: parsed.data.mode,
       language: parsed.data.language,
-      model: parsed.data.model || getDefaultOpenRouterModel(),
+      model: requestedModelForLog(parsed.data),
       status: 'error',
       durationMs: Date.now() - startedAt,
     }).catch(console.error);

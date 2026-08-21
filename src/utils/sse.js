@@ -1,4 +1,4 @@
-function handleEvent(event, onChunk) {
+function handleEvent(event, onChunk, onEvent) {
   const serialized = event
     .split(/\r?\n/)
     .filter((line) => line.startsWith('data:'))
@@ -13,10 +13,11 @@ function handleEvent(event, onChunk) {
     throw new Error('The AI server returned an invalid streamed response.');
   }
   if (data.error) throw new Error(data.error);
+  onEvent?.(data);
   if (typeof data.text === 'string' && data.text) onChunk(data.text);
 }
 
-export async function consumeSseStream(stream, onChunk) {
+export async function consumeSseStream(stream, onChunk, onEvent) {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -26,13 +27,13 @@ export async function consumeSseStream(stream, onChunk) {
       buffer += decoder.decode(value, { stream: !done });
       let match = /\r?\n\r?\n/.exec(buffer);
       while (match) {
-        handleEvent(buffer.slice(0, match.index), onChunk);
+        handleEvent(buffer.slice(0, match.index), onChunk, onEvent);
         buffer = buffer.slice(match.index + match[0].length);
         match = /\r?\n\r?\n/.exec(buffer);
       }
       if (done) break;
     }
-    if (buffer.trim()) handleEvent(buffer, onChunk);
+    if (buffer.trim()) handleEvent(buffer, onChunk, onEvent);
   } catch (error) {
     await reader.cancel(error).catch(() => {});
     throw error;

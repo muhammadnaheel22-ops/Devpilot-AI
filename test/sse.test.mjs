@@ -35,3 +35,20 @@ test('reports malformed streamed JSON clearly', async () => {
   const stream = chunkedStream('data: not-json\n\n', [4]);
   await assert.rejects(() => consumeSseStream(stream, () => {}), /invalid streamed response/);
 });
+
+test('reports completion routing metadata without treating it as text', async () => {
+  const stream = chunkedStream(
+    'data: {"text":"Done"}\n\ndata: {"done":true,"model":"anthropic/claude-sonnet-4","routingMode":"auto"}\n\n',
+    [12, 37],
+  );
+  const chunks = [];
+  const events = [];
+  await consumeSseStream(
+    stream,
+    (chunk) => chunks.push(chunk),
+    (event) => events.push(event),
+  );
+  assert.deepEqual(chunks, ['Done']);
+  assert.equal(events.at(-1).model, 'anthropic/claude-sonnet-4');
+  assert.equal(events.at(-1).routingMode, 'auto');
+});

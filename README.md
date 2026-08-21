@@ -36,6 +36,7 @@ Configure these values in `.env`:
 VITE_API_BASE_URL=/api
 OPENROUTER_API_KEY=your-server-only-key
 OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_MAX_COMPLETION_TOKENS=1024
 DATABASE_URL=postgresql://user:password@ep-example-pooler.region.aws.neon.tech/neondb?sslmode=require
 ADMIN_EMAILS=
 ```

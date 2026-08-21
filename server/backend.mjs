@@ -47,6 +47,19 @@ export function getDefaultOpenRouterModel() {
   return process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
 }
 
+export function getOpenRouterMaxCompletionTokens() {
+  const configured = Number(process.env.OPENROUTER_MAX_COMPLETION_TOKENS || 1024);
+  if (!Number.isFinite(configured)) return 1024;
+  return Math.min(8192, Math.max(16, Math.floor(configured)));
+}
+
+export function affordableCompletionTokens(message) {
+  const match = String(message).match(/can only afford\s+(\d+)/i);
+  if (!match) return null;
+  const affordable = Number(match[1]);
+  return Number.isFinite(affordable) && affordable >= 0 ? affordable : null;
+}
+
 export async function listOpenRouterModels() {
   if (!process.env.OPENROUTER_API_KEY) {
     throw Object.assign(new Error('OPENROUTER_API_KEY is not configured on the server.'), {
@@ -151,6 +164,49 @@ export function systemInstruction(mode, language) {
   return `You are DevPilot AI, a senior software engineer and secure coding assistant. Mode: ${mode}. Preferred language: ${language}. Produce accurate, maintainable, production-ready answers. State assumptions. Never invent executed test results. Never expose secrets. Prefer parameterized queries, input validation, accessible UI, explicit error handling, and concise setup instructions. Use Markdown with fenced code blocks and file names.`;
 }
 
+function openRouterHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    'Content-Type': 'application/json',
+    ...(process.env.OPENROUTER_SITE_URL ? { 'HTTP-Referer': process.env.OPENROUTER_SITE_URL } : {}),
+    ...(process.env.OPENROUTER_APP_NAME ? { 'X-Title': process.env.OPENROUTER_APP_NAME } : {}),
+  };
+}
+
+async function requestOpenRouterCompletion({ body, signal }) {
+  const send = (maxCompletionTokens) =>
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal,
+      headers: openRouterHeaders(),
+      body: JSON.stringify({
+        ...body,
+        max_completion_tokens: maxCompletionTokens,
+      }),
+    });
+
+  let maxCompletionTokens = getOpenRouterMaxCompletionTokens();
+  let response = await send(maxCompletionTokens);
+  if (response.ok) return response;
+
+  let payload = await response.json().catch(() => ({}));
+  let message = payload?.error?.message || `OpenRouter request failed (${response.status}).`;
+  const affordable = affordableCompletionTokens(message);
+  if (affordable !== null && affordable >= 16 && affordable < maxCompletionTokens) {
+    maxCompletionTokens = Math.max(16, Math.floor(affordable * 0.9));
+    response = await send(maxCompletionTokens);
+    if (response.ok) return response;
+    payload = await response.json().catch(() => ({}));
+    message = payload?.error?.message || `OpenRouter request failed (${response.status}).`;
+  }
+
+  if (affordableCompletionTokens(message) !== null) {
+    message =
+      'OpenRouter credits are too low for a short response. Add credits or select a lower-cost or free model.';
+  }
+  throw Object.assign(new Error(message), { status: response.status });
+}
+
 export async function streamOpenRouter({
   messages,
   mode,
@@ -167,31 +223,15 @@ export async function streamOpenRouter({
   }
 
   const resolvedRouting = await resolveOpenRouterRouting({ routing, model: requestedModel });
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
+  const response = await requestOpenRouterCompletion({
     signal,
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      ...(process.env.OPENROUTER_SITE_URL
-        ? { 'HTTP-Referer': process.env.OPENROUTER_SITE_URL }
-        : {}),
-      ...(process.env.OPENROUTER_APP_NAME ? { 'X-Title': process.env.OPENROUTER_APP_NAME } : {}),
-    },
-    body: JSON.stringify({
+    body: {
       ...resolvedRouting.requestBody,
       stream: true,
       temperature: 0.35,
-      max_tokens: 8192,
       messages: [{ role: 'system', content: systemInstruction(mode, language) }, ...messages],
-    }),
+    },
   });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    const message = payload?.error?.message || `OpenRouter request failed (${response.status}).`;
-    throw Object.assign(new Error(message), { status: response.status });
-  }
   if (!response.body) throw new Error('OpenRouter returned an empty response stream.');
 
   const reader = response.body.getReader();

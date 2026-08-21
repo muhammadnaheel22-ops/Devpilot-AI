@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import {
   Download,
   FileJson,
@@ -13,7 +13,6 @@ import toast from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import { LanguageSelect } from '../ui/LanguageSelect';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
-import { modePrompts } from '../../constants/tools';
 import { streamOpenRouter } from '../../services/openRouterService';
 import { useAuth } from '../../context/AuthContext';
 import { addUserSnippet, recordActivity } from '../../services/userDataService';
@@ -47,10 +46,6 @@ export function AIWorkspace({ mode, title, description }) {
   const { user } = useAuth();
   const { resolvedTheme } = useTheme();
   const { models, modelsLoading, routing, setRouting, requestRouting } = useModelRouting();
-  const promptText = useMemo(
-    () => `${modePrompts[mode]}\n\nPreferred language: ${language}.\n\nUser request:\n${prompt}`,
-    [mode, language, prompt],
-  );
   const run = async () => {
     if (!prompt.trim()) return toast.error('Enter a request or code first');
     setRunning(true);
@@ -59,7 +54,7 @@ export function AIWorkspace({ mode, title, description }) {
     controller.current = new AbortController();
     try {
       await streamOpenRouter({
-        messages: [{ role: 'user', content: promptText }],
+        messages: [{ role: 'user', content: prompt.trim() }],
         mode,
         language,
         routing: requestRouting,

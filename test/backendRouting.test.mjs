@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveOpenRouterRouting, streamOpenRouter } from '../server/backend.mjs';
+import {
+  resolveOpenRouterRouting,
+  streamOpenRouter,
+  systemInstruction,
+} from '../server/backend.mjs';
 
 const originalFetch = globalThis.fetch;
 const originalApiKey = process.env.OPENROUTER_API_KEY;
@@ -54,6 +58,14 @@ test('sends OpenRouter Auto and reports the concrete selected model', async () =
   assert.equal(result.model, 'openai/gpt-oss-20b:free');
   assert.equal(result.routingMode, 'auto');
   assert.deepEqual(chunks, ['Completed']);
+});
+
+test('code generation instructions match the complexity requested by the user', () => {
+  const instruction = systemInstruction('generate', 'javascript');
+  assert.match(instruction, /minimal working code first/i);
+  assert.match(instruction, /Do not add architecture.*unless the user asks/i);
+  assert.match(instruction, /Correct obvious spelling mistakes silently/i);
+  assert.doesNotMatch(instruction, /Include assumptions, file names, setup/i);
 });
 
 test('sends an ordered models array for fallback routing', async () => {

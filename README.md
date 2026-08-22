@@ -4,7 +4,7 @@ DevPilot AI is a full-stack developer workspace for AI chat, code generation, de
 
 **Live application:** [https://devpilot-ai-alpha.vercel.app](https://devpilot-ai-alpha.vercel.app)
 
-
+**GitHub repository:** [muhammadnaheel/Devpilot-AI](https://github.com/muhammadnaheel/Devpilot-AI)
 
 ## Highlights
 
@@ -51,7 +51,7 @@ DevPilot AI is a full-stack developer workspace for AI chat, code generation, de
 ## Local development
 
 ```bash
-git clone https://github.com/muhammadnaheel22-ops/Devpilot-AI.git
+git clone https://github.com/muhammadnaheel/Devpilot-AI.git
 cd Devpilot-AI
 npm install
 cp .env.example .env
@@ -123,7 +123,7 @@ npm run admin:grant -- admin@example.com
 
 ## Deploying to Vercel
 
-1. Import the [GitHub repository](https://github.com/muhammadnaheel22-ops/Devpilot-AI) into Vercel.
+1. Import the [GitHub repository](https://github.com/muhammadnaheel/Devpilot-AI) into Vercel.
 2. Add the values from `.env.example` under **Project Settings → Environment Variables**.
 3. Set `CLIENT_ORIGIN` and `OPENROUTER_SITE_URL` to the production URL.
 4. Keep `OPENROUTER_MODEL=openrouter/free` and `REQUIRE_AUTH=true`.

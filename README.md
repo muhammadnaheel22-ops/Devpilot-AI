@@ -4,7 +4,7 @@ DevPilot AI is a full-stack developer workspace for AI chat, code generation, de
 
 **Live application:** [https://devpilot-ai-alpha.vercel.app](https://devpilot-ai-alpha.vercel.app)
 
-**GitHub repository:** [muhammadnaheel22-ops/Devpilot-AI](https://github.com/muhammadnaheel22-ops/Devpilot-AI)
+
 
 ## Highlights
 
